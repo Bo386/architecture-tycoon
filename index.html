@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architecture Simulator: Level 1 - Performance Bottleneck</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+</head>
+<body>
+
+    <div id="game-container"></div>
+
+    <div id="game-ui">
+        <div id="header">
+            <div class="title-group">
+                <h1>Level 1: Monolithic Architecture Scaling</h1>
+                <div class="legend-box">
+                    <span><span class="legend-dot" style="background:#00ffff"></span>Request</span>
+                    <span><span class="legend-dot" style="background:#ffd700"></span>Response</span>
+                    <span style="color:#ffd700; margin-left:10px;">Goal: 1000 Requests & Error Rate < 1%</span>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <div class="budget-display">Budget: $<span id="ui-money">500</span></div>
+                
+                <button id="btn-start" class="start">
+                    <span>▶ Start</span>
+                </button>
+
+                <button id="btn-upgrade" class="upgrade" disabled>
+                    <span>⬆ Upgrade Server ($200)</span>
+                </button>
+
+                <button id="btn-reset" class="reset">
+                    <span>↺ Reset</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="stats-panel">
+            <div class="stat-item">
+                <span class="stat-label">Progress (1000):</span>
+                <span class="stat-value" id="stat-total">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Success:</span>
+                <span class="stat-value" style="color:#00ff00" id="stat-success">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Errors:</span>
+                <span class="stat-value" style="color:#ff4444" id="stat-errors">0</span>
+            </div>
+            <div style="border-top:1px solid #555; margin:5px 0;"></div>
+            <div class="stat-item">
+                <span class="stat-label">Error Rate:</span>
+                <span class="stat-value" id="stat-rate">0.0%</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Current Load:</span>
+                <span class="stat-value" id="stat-load" style="color:#00ffff">Low</span>
+            </div>
+        </div>
+
+        <div id="difficulty-toast">⚠ Traffic Surge! Concurrency Increased</div>
+
+        <!-- Result Modal -->
+        <div id="result-modal">
+            <h2 id="modal-title">Congratulations!</h2>
+            <div class="modal-content" id="modal-body">
+                <!-- Dynamic content -->
+            </div>
+            <div class="modal-footer">
+                <button id="btn-modal-retry" class="reset">Retry</button>
+                <button id="btn-modal-next" class="start">Enter Level 2</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+</body>
+</html>

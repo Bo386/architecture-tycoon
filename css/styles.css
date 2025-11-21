@@ -1,0 +1,256 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#game-ui {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    pointer-events: none;
+    top: 0;
+    left: 0;
+}
+
+#header {
+    width: 100%;
+    padding: 10px 20px;
+    background-color: rgba(37, 37, 38, 0.95);
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-sizing: border-box;
+    height: 60px;
+    pointer-events: auto;
+}
+
+.title-group {
+    display: flex;
+    flex-direction: column;
+}
+
+h1 {
+    font-size: 18px;
+    margin: 0;
+    color: #4fc1ff;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Budget Display */
+.budget-display {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    color: #ffd700;
+    background: #333;
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    margin-right: 10px;
+}
+
+button {
+    background-color: #0e639c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+button:hover {
+    background-color: #1177bb;
+    transform: translateY(-1px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:disabled {
+    background-color: #444;
+    color: #888;
+    cursor: not-allowed;
+    transform: none;
+}
+
+button.danger {
+    background-color: #b91010;
+}
+
+button.danger:hover {
+    background-color: #d61515;
+}
+
+button.upgrade {
+    background-color: #d68a00;
+}
+
+button.upgrade:hover {
+    background-color: #e69b00;
+}
+
+button.start {
+    background-color: #2da042;
+}
+
+button.start:hover {
+    background-color: #34b84d;
+}
+
+button.reset {
+    background-color: #555;
+}
+
+button.reset:hover {
+    background-color: #666;
+}
+
+#game-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #000;
+}
+
+#stats-panel {
+    position: absolute;
+    top: 70px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 15px;
+    border-radius: 8px;
+    pointer-events: none;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    border: 1px solid #444;
+    min-width: 150px;
+}
+
+.stat-item {
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.stat-label {
+    color: #aaa;
+}
+
+.stat-value {
+    font-weight: bold;
+}
+
+.legend-box {
+    display: flex;
+    gap: 10px;
+    font-size: 10px;
+    color: #aaa;
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+}
+
+/* Difficulty Notification */
+#difficulty-toast {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 50, 50, 0.8);
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.5s;
+    pointer-events: none;
+}
+
+/* Result Modal */
+#result-modal {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #252526;
+    border: 2px solid #4fc1ff;
+    border-radius: 10px;
+    padding: 20px;
+    width: 500px;
+    color: #e0e0e0;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    pointer-events: auto;
+    z-index: 1000;
+}
+
+#result-modal h2 {
+    margin-top: 0;
+    color: #ffd700;
+}
+
+.modal-content {
+    margin: 15px 0;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.concept-box {
+    background: #333;
+    padding: 10px;
+    border-left: 4px solid #4fc1ff;
+    margin-top: 10px;
+    font-size: 13px;
+    color: #ccc;
+}
+
+.win-theme {
+    border-color: #00ff00 !important;
+}
+
+.win-theme h2 {
+    color: #00ff00 !important;
+}
+
+.lose-theme {
+    border-color: #ff4444 !important;
+}
+
+.lose-theme h2 {
+    color: #ff4444 !important;
+}
