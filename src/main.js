@@ -49,17 +49,25 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventHandlers() {
     // Start button
     document.getElementById('btn-start').addEventListener('click', () => {
-        const scene = game.scene.getScene('Level1Scene');
-        if (scene && scene.sys.settings.active) {
-            scene.startSimulation();
+        const level1Scene = game.scene.getScene('Level1Scene');
+        const level2Scene = game.scene.getScene('Level2Scene');
+        
+        if (level1Scene && level1Scene.sys.settings.active) {
+            level1Scene.startSimulation();
+        } else if (level2Scene && level2Scene.sys.settings.active) {
+            level2Scene.startSimulation();
         }
     });
 
     // Reset button
     document.getElementById('btn-reset').addEventListener('click', () => {
-        const scene = game.scene.getScene('Level1Scene');
-        if (scene) {
-            scene.scene.restart();
+        const level1Scene = game.scene.getScene('Level1Scene');
+        const level2Scene = game.scene.getScene('Level2Scene');
+        
+        if (level1Scene && level1Scene.sys.settings.active) {
+            level1Scene.scene.restart();
+        } else if (level2Scene && level2Scene.sys.settings.active) {
+            level2Scene.scene.restart();
         }
     });
 
@@ -77,17 +85,21 @@ function setupEventHandlers() {
 
     // Modal retry button
     document.getElementById('btn-modal-retry').addEventListener('click', () => {
-        const scene = game.scene.getScene('Level1Scene');
-        if (scene) {
-            scene.scene.restart();
+        const level1Scene = game.scene.getScene('Level1Scene');
+        const level2Scene = game.scene.getScene('Level2Scene');
+        
+        if (level1Scene && level1Scene.sys.settings.active) {
+            level1Scene.scene.restart();
+        } else if (level2Scene && level2Scene.sys.settings.active) {
+            level2Scene.scene.restart();
         }
     });
 
     // Modal next level button
     document.getElementById('btn-modal-next').addEventListener('click', () => {
-        const scene = game.scene.getScene('Level1Scene');
-        if (scene) {
-            scene.scene.start('Level2Scene');
+        const level1Scene = game.scene.getScene('Level1Scene');
+        if (level1Scene && level1Scene.sys.settings.active) {
+            level1Scene.scene.start('Level2Scene');
         }
     });
 

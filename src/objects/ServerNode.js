@@ -12,7 +12,7 @@ export class ServerNode extends Phaser.GameObjects.Container {
         super(scene, x, y);
         this.scene = scene;
         this.name = name;
-        this.type = type; // 'user', 'app'
+        this.type = type; // 'user', 'app', 'database'
         this.level = 1;   // Initial level
         
         this.capacity = capacity; 
@@ -21,6 +21,9 @@ export class ServerNode extends Phaser.GameObjects.Container {
         
         this.localSuccess = 0;
         this.localErrors = 0;
+        
+        // Ensure node is active for packet routing
+        this.setActive(true);
         
         this.createVisuals();
         scene.add.existing(this);
@@ -56,7 +59,7 @@ export class ServerNode extends Phaser.GameObjects.Container {
         // Type-specific UI elements
         if (this.type === 'user') {
             this.createUserStats();
-        } else if (this.type === 'app') {
+        } else if (this.type === 'app' || this.type === 'database') {
             this.createServerStats();
         }
     }
@@ -192,18 +195,48 @@ export class ServerNode extends Phaser.GameObjects.Container {
     }
 
     routePacket(packet) {
-        if (this.type === 'app' && !packet.isResponse) {
-            // Server sends response back
+        // Database processing complete - send response back to app
+        if (this.type === 'database' && !packet.isResponse) {
             packet.isResponse = true;
-            packet.fillColor = CONFIG.colors.packetRes;
+            packet.setFillStyle(CONFIG.colors.packetRes);
+            if (packet.appNode && packet.appNode.active) {
+                sendPacketAnim(this.scene, packet, packet.appNode, this);
+            } else {
+                packet.destroy();
+            }
+        }
+        // App receives response from database - forward to user
+        else if (this.type === 'app' && packet.isResponse) {
             if (packet.sourceNode && packet.sourceNode.active) {
                 sendPacketAnim(this.scene, packet, packet.sourceNode, this);
             } else {
                 packet.destroy();
             }
-        } 
+        }
+        // App receives request - check if database exists
+        else if (this.type === 'app' && !packet.isResponse) {
+            const database = GameState.nodes['Database'];
+            console.log('App processing request. Database exists?', database ? 'YES' : 'NO');
+            console.log('All nodes:', Object.keys(GameState.nodes));
+            if (database) {
+                // Level 2: Forward request to database
+                console.log('Forwarding to database');
+                packet.appNode = this; // Store app node reference for return path
+                sendPacketAnim(this.scene, packet, database, this);
+            } else {
+                // Level 1: No database, send response directly
+                console.log('No database, sending response back');
+                packet.isResponse = true;
+                packet.setFillStyle(CONFIG.colors.packetRes);
+                if (packet.sourceNode && packet.sourceNode.active) {
+                    sendPacketAnim(this.scene, packet, packet.sourceNode, this);
+                } else {
+                    packet.destroy();
+                }
+            }
+        }
+        // User sends request to app
         else if (this.type === 'user' && !packet.isResponse) {
-            // User sends request to app
             const target = GameState.nodes['App'];
             if (target) {
                 sendPacketAnim(this.scene, packet, target, this);

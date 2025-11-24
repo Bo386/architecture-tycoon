@@ -15,7 +15,8 @@ export const CONFIG = {
     },
     upgradeCost: 200,
     targetTotal: 1000,
-    maxErrorRate: 1.0 // 1%
+    maxErrorRate: 1.0, // 1%
+    level2Target: 100  // Level 2 only needs 100 requests
 };
 
 export const GameState = {
@@ -26,10 +27,11 @@ export const GameState = {
     nodes: {},
     isRunning: false,
     isGameOver: false,
-    difficultyLevel: 0
+    difficultyLevel: 0,
+    currentLevel: 1  // Track current level
 };
 
-export const resetGameState = () => {
+export const resetGameState = (level = 1) => {
     GameState.money = 500;
     GameState.success = 0;
     GameState.errors = 0;
@@ -38,4 +40,5 @@ export const resetGameState = () => {
     GameState.isRunning = false;
     GameState.isGameOver = false;
     GameState.difficultyLevel = 0;
+    GameState.currentLevel = level;
 };
