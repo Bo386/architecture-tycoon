@@ -39,7 +39,10 @@ export class WelcomeScene extends Phaser.Scene {
         btn.on('pointerout', () => btn.fillColor = 0x0e639c);
         btn.on('pointerdown', () => this.scene.start('Level1Scene'));
         
-        // Hide game UI
-        document.getElementById('game-ui').style.display = 'none';
+        // Hide game UI elements
+        const leftSidebar = document.getElementById('left-sidebar');
+        const controlPanel = document.getElementById('control-panel');
+        if (leftSidebar) leftSidebar.style.display = 'none';
+        if (controlPanel) controlPanel.style.display = 'none';
     }
 }

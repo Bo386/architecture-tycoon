@@ -8,73 +8,101 @@
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
+    <!-- Top Header -->
+    <div id="header">
+        <h1>Level 1: Monolithic Architecture Scaling</h1>
+        <div class="legend-box">
+            <span><span class="legend-dot" style="background:#00ffff"></span>Request</span>
+            <span><span class="legend-dot" style="background:#ffd700"></span>Response</span>
+            <span style="color:#ffd700; margin-left:10px;">Goal: 1000 Requests & Error Rate < 1%</span>
+        </div>
+    </div>
 
-    <div id="game-container"></div>
-
-    <div id="game-ui">
-        <div id="header">
-            <div class="title-group">
-                <h1>Level 1: Monolithic Architecture Scaling</h1>
-                <div class="legend-box">
-                    <span><span class="legend-dot" style="background:#00ffff"></span>Request</span>
-                    <span><span class="legend-dot" style="background:#ffd700"></span>Response</span>
-                    <span style="color:#ffd700; margin-left:10px;">Goal: 1000 Requests & Error Rate < 1%</span>
+    <!-- Main Content Area -->
+    <div id="main-content">
+        <!-- Left Sidebar -->
+        <div id="left-sidebar">
+            <div class="sidebar-section">
+                <h3>Monitoring</h3>
+                <div class="stat-item">
+                    <span class="stat-label">Progress (1000):</span>
+                    <span class="stat-value" id="stat-total">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Success:</span>
+                    <span class="stat-value" style="color:#00ff00" id="stat-success">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Errors:</span>
+                    <span class="stat-value" style="color:#ff4444" id="stat-errors">0</span>
+                </div>
+                <div class="stat-divider"></div>
+                <div class="stat-item">
+                    <span class="stat-label">Error Rate:</span>
+                    <span class="stat-value" id="stat-rate">0.0%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Current Load:</span>
+                    <span class="stat-value" id="stat-load" style="color:#00ffff">Low</span>
                 </div>
             </div>
-            
-            <div class="controls">
-                <div class="budget-display">Budget: $<span id="ui-money">500</span></div>
+
+            <div class="sidebar-section">
+                <h3>Objectives</h3>
+                <ul class="objectives-list">
+                    <li>Complete 1000 requests</li>
+                    <li>Maintain error rate < 1%</li>
+                    <li>Manage your budget wisely</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Content Area -->
+        <div id="right-content">
+            <!-- Architecture Display Area -->
+            <div id="architecture-area">
+                <div id="game-container"></div>
+            </div>
+
+            <!-- Control Panel at Bottom -->
+            <div id="control-panel">
+                <div class="budget-display">
+                    Budget: $<span id="ui-money">500</span>
+                </div>
                 
-                <button id="btn-start" class="start">
-                    <span>▶ Start</span>
-                </button>
+                <div class="button-group">
+                    <button id="btn-start" class="start">
+                        <span>▶ Start</span>
+                    </button>
 
-                <button id="btn-upgrade" class="upgrade" disabled>
-                    <span>⬆ Upgrade Server ($200)</span>
-                </button>
+                    <button id="btn-upgrade" class="upgrade" disabled>
+                        <span>⬆ Upgrade Server ($200)</span>
+                    </button>
 
-                <button id="btn-reset" class="reset">
-                    <span>↺ Reset</span>
-                </button>
+                    <button id="btn-reset" class="reset">
+                        <span>↺ Reset</span>
+                    </button>
+
+                    <button id="btn-skip" class="skip">
+                        <span>⏭ Skip Level</span>
+                    </button>
+                </div>
             </div>
         </div>
+    </div>
 
-        <div id="stats-panel">
-            <div class="stat-item">
-                <span class="stat-label">Progress (1000):</span>
-                <span class="stat-value" id="stat-total">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Success:</span>
-                <span class="stat-value" style="color:#00ff00" id="stat-success">0</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Errors:</span>
-                <span class="stat-value" style="color:#ff4444" id="stat-errors">0</span>
-            </div>
-            <div style="border-top:1px solid #555; margin:5px 0;"></div>
-            <div class="stat-item">
-                <span class="stat-label">Error Rate:</span>
-                <span class="stat-value" id="stat-rate">0.0%</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-label">Current Load:</span>
-                <span class="stat-value" id="stat-load" style="color:#00ffff">Low</span>
-            </div>
+    <!-- Toast Notification -->
+    <div id="difficulty-toast">⚠ Traffic Surge! Concurrency Increased</div>
+
+    <!-- Result Modal -->
+    <div id="result-modal">
+        <h2 id="modal-title">Congratulations!</h2>
+        <div class="modal-content" id="modal-body">
+            <!-- Dynamic content -->
         </div>
-
-        <div id="difficulty-toast">⚠ Traffic Surge! Concurrency Increased</div>
-
-        <!-- Result Modal -->
-        <div id="result-modal">
-            <h2 id="modal-title">Congratulations!</h2>
-            <div class="modal-content" id="modal-body">
-                <!-- Dynamic content -->
-            </div>
-            <div class="modal-footer">
-                <button id="btn-modal-retry" class="reset">Retry</button>
-                <button id="btn-modal-next" class="start">Enter Level 2</button>
-            </div>
+        <div class="modal-footer">
+            <button id="btn-modal-retry" class="reset">Retry</button>
+            <button id="btn-modal-next" class="start">Enter Level 2</button>
         </div>
     </div>
 

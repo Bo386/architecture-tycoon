@@ -13,12 +13,12 @@ import { Level2Scene } from './scenes/Level2Scene.js';
 const gameConfig = {
     type: Phaser.AUTO,
     parent: 'game-container',
-    width: 800,
-    height: 600,
-    backgroundColor: '#1e1e1e',
+    width: window.innerWidth,
+    height: window.innerHeight,
+    backgroundColor: '#000000',
     scale: { 
-        mode: Phaser.Scale.FIT, 
-        autoCenter: Phaser.Scale.CENTER_BOTH 
+        mode: Phaser.Scale.RESIZE,
+        autoCenter: Phaser.Scale.NO_CENTER
     },
     scene: [WelcomeScene, Level1Scene, Level2Scene]
 };
@@ -26,9 +26,24 @@ const gameConfig = {
 // Initialize game
 const game = new Phaser.Game(gameConfig);
 
+// Handle window resize
+window.addEventListener('resize', () => {
+    const container = document.getElementById('game-container');
+    if (container && game.scale) {
+        game.scale.resize(container.clientWidth, container.clientHeight);
+    }
+});
+
 // UI Event Handlers
 document.addEventListener('DOMContentLoaded', () => {
     setupEventHandlers();
+    // Initial resize to fit container
+    setTimeout(() => {
+        const container = document.getElementById('game-container');
+        if (container && game.scale) {
+            game.scale.resize(container.clientWidth, container.clientHeight);
+        }
+    }, 100);
 });
 
 function setupEventHandlers() {
@@ -73,6 +88,18 @@ function setupEventHandlers() {
         const scene = game.scene.getScene('Level1Scene');
         if (scene) {
             scene.scene.start('Level2Scene');
+        }
+    });
+
+    // Skip level button
+    document.getElementById('btn-skip').addEventListener('click', () => {
+        const level1Scene = game.scene.getScene('Level1Scene');
+        const level2Scene = game.scene.getScene('Level2Scene');
+        
+        if (level1Scene && level1Scene.sys.settings.active) {
+            level1Scene.skipLevel();
+        } else if (level2Scene && level2Scene.sys.settings.active) {
+            level2Scene.skipLevel();
         }
     });
 }

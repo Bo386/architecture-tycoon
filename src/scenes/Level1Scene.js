@@ -14,8 +14,11 @@ export class Level1Scene extends Phaser.Scene {
     }
 
     create() {
-        // Show game UI
-        document.getElementById('game-ui').style.display = 'block';
+        // Show game UI elements
+        const leftSidebar = document.getElementById('left-sidebar');
+        const controlPanel = document.getElementById('control-panel');
+        if (leftSidebar) leftSidebar.style.display = 'flex';
+        if (controlPanel) controlPanel.style.display = 'flex';
         document.getElementById('result-modal').style.display = 'none';
         
         // Reset game state
@@ -149,5 +152,47 @@ export class Level1Scene extends Phaser.Scene {
         packet.sourceNode = startNode;
         packet.isResponse = false;
         startNode.routePacket(packet);
+    }
+
+    skipLevel() {
+        // Stop any running timers
+        if (this.trafficTimer) this.trafficTimer.remove();
+        if (this.difficultyTimer) this.difficultyTimer.remove();
+
+        // Set winning game state
+        GameState.total = CONFIG.targetTotal;
+        GameState.success = CONFIG.targetTotal - 5; // 5 errors for 0.5% error rate
+        GameState.errors = 5;
+        GameState.isRunning = false;
+        GameState.isGameOver = true;
+
+        // Update UI and show success modal
+        updateUI();
+        
+        const rate = (GameState.errors / GameState.total) * 100;
+        const modal = document.getElementById('result-modal');
+        const title = document.getElementById('modal-title');
+        const body = document.getElementById('modal-body');
+        const btnNext = document.getElementById('btn-modal-next');
+
+        modal.style.display = 'block';
+        modal.className = 'win-theme';
+
+        title.innerText = "Level 1 Skipped - Auto Complete!";
+        body.innerHTML = `
+            <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
+            <p>You successfully handled ${CONFIG.targetTotal} high-concurrency requests!</p>
+            
+            <div class="concept-box">
+                <strong>Architect's Notes: Vertical Scaling</strong><br/>
+                What you just did is typical "vertical scaling" - improving performance by increasing a single server's resources (CPU, memory).
+                <br/><br/>
+                <ul>
+                    <li>✅ Advantages: Simple architecture, no code changes needed, quick results.</li>
+                    <li>❌ Disadvantages: Hardware has physical limits (can't upgrade past Level 3), costs increase exponentially, single point of failure risk.</li>
+                </ul>
+            </div>
+        `;
+        btnNext.style.display = 'inline-block';
     }
 }

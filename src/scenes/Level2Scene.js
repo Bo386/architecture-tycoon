@@ -34,4 +34,23 @@ export class Level2Scene extends Phaser.Scene {
             color: '#aaa' 
         }).setOrigin(0.5);
     }
+
+    skipLevel() {
+        // Show a message that this level is not yet implemented
+        const modal = document.getElementById('result-modal');
+        const title = document.getElementById('modal-title');
+        const body = document.getElementById('modal-body');
+        const btnNext = document.getElementById('btn-modal-next');
+
+        modal.style.display = 'block';
+        modal.className = 'win-theme';
+
+        title.innerText = "Level 2 - Coming Soon!";
+        body.innerHTML = `
+            <p>This level is still under development.</p>
+            <p>Level 2 will feature <strong>Horizontal Scaling</strong> with Load Balancers and Server Clusters.</p>
+            <p>Stay tuned for updates!</p>
+        `;
+        btnNext.style.display = 'none';
+    }
 }
