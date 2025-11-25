@@ -63,6 +63,7 @@ export function updateUI() {
     // Update derived/calculated UI elements
     updateErrorRate();          // Calculate and display error percentage
     updateLoadIndicator();      // Show current system load level
+    updateDatabaseStats();      // Update database storage and speed (Level 2 only)
     updateUpgradeButton();      // Enable/disable upgrade button based on money
     updateStartButton();        // Update start button state and text
 }
@@ -138,6 +139,75 @@ function updateLoadIndicator() {
     else {
         loadEl.innerText = "Extreme";
         loadEl.style.color = "#ff0000"; // Red - critical
+    }
+}
+
+/**
+ * Update Database Statistics Display
+ * 
+ * Updates the database storage and speed indicators.
+ * Only visible in Level 2 when database exists.
+ * 
+ * Shows:
+ * - Database storage: Number of write operations performed
+ * - Database speed: Current processing time (increases as storage grows)
+ */
+function updateDatabaseStats() {
+    const storageContainer = document.getElementById('stat-db-storage-container');
+    const speedContainer = document.getElementById('stat-db-speed-container');
+    const storageValue = document.getElementById('stat-db-storage');
+    const speedValue = document.getElementById('stat-db-speed');
+    
+    // Only show database stats in Level 2 and beyond
+    if (GameState.currentLevel >= 2 && GameState.nodes['Database']) {
+        // Show the containers
+        if (storageContainer) storageContainer.style.display = 'flex';
+        if (speedContainer) speedContainer.style.display = 'flex';
+        
+        // Update storage value
+        if (storageValue) {
+            storageValue.innerText = GameState.databaseStorage;
+            
+            // Color coding based on storage size
+            // Green: Low storage (0-20)
+            // Yellow: Medium storage (21-50)
+            // Orange: High storage (51-100)
+            // Red: Very high storage (100+)
+            if (GameState.databaseStorage <= 20) {
+                storageValue.style.color = '#00ff00';
+            } else if (GameState.databaseStorage <= 50) {
+                storageValue.style.color = '#ffff00';
+            } else if (GameState.databaseStorage <= 100) {
+                storageValue.style.color = '#ff6b35';
+            } else {
+                storageValue.style.color = '#ff0000';
+            }
+        }
+        
+        // Update speed value from the actual database node
+        const dbNode = GameState.nodes['Database'];
+        if (speedValue && dbNode) {
+            speedValue.innerText = dbNode.speed + 'ms';
+            
+            // Color coding based on speed degradation
+            // Green: Fast (< 1000ms)
+            // Yellow: Medium (1000-1500ms)
+            // Orange: Slow (1500-2000ms)
+            // Red: Very slow (2000ms+)
+            if (dbNode.speed < 1000) {
+                speedValue.style.color = '#00ff00';
+            } else if (dbNode.speed < 1500) {
+                speedValue.style.color = '#ffff00';
+            } else if (dbNode.speed < 2000) {
+                speedValue.style.color = '#ff6b35';
+            } else {
+                speedValue.style.color = '#ff0000';
+            }
+        }
+    } else {
+        // Hide database stats for Level 1
+        if (storageContainer) storageContainer.style.display = 'none';
+        if (speedContainer) speedContainer.style.display = 'none';
     }
 }
 

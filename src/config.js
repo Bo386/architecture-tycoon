@@ -22,11 +22,17 @@ export const CONFIG = {
         bg: 0x1e1e1e,          // Background color - dark gray for the game canvas
         node: 0x252526,         // Server node fill color - slightly lighter gray
         nodeBorder: 0x4fc1ff,   // Server node border color - bright cyan for visibility
-        packetReq: 0x00ffff,    // Request packet color - cyan (matches legend)
+        packetReq: 0x00ffff,    // Read request packet color - cyan (matches legend)
+        packetWrite: 0xff6b35,  // Write/update request packet color - orange
         packetRes: 0xffd700,    // Response packet color - gold (matches legend)
         linkReq: 0x005555,      // Request link/connection color - dark cyan
         linkRes: 0x554400       // Response link/connection color - dark gold
     },
+    
+    /**
+     * Request Type Configuration
+     */
+    writeRequestPercentage: 30,  // Percentage of requests that are write operations (30%)
     
     /**
      * Game Economics
@@ -81,7 +87,14 @@ export const GameState = {
     /**
      * Level Tracking
      */
-    currentLevel: 1             // Current level number (1 = monolithic, 2 = microservices)
+    currentLevel: 1,            // Current level number (1 = monolithic, 2 = microservices)
+    
+    /**
+     * Database Storage State
+     * Tracks how much data has been written to the database
+     * Storage growth affects database performance (slower as it grows)
+     */
+    databaseStorage: 0          // Current database storage size (increases with write operations)
 };
 
 /**
@@ -114,4 +127,7 @@ export const resetGameState = (level = 1) => {
     
     // Set the current level
     GameState.currentLevel = level;
+    
+    // Reset database storage (only relevant for Level 2+)
+    GameState.databaseStorage = 0;
 };

@@ -16,10 +16,12 @@
         <h1>Level 1: Monolithic Architecture Scaling</h1>
         <!-- Legend box: Explains the meaning of colored dots/elements in the game -->
         <div class="legend-box">
-            <!-- Cyan dot represents incoming requests -->
-            <span><span class="legend-dot" style="background:#00ffff"></span>Request</span>
+            <!-- Cyan circle represents read requests -->
+            <span><span class="legend-dot" style="background:#00ffff; border-radius:50%;"></span>Read (circle)</span>
+            <!-- Cyan diamond represents write requests (Level 2 only) -->
+            <span><span class="legend-dot" style="background:#00ffff; transform: rotate(45deg);"></span>Write (diamond)</span>
             <!-- Gold dot represents outgoing responses -->
-            <span><span class="legend-dot" style="background:#ffd700"></span>Response</span>
+            <span><span class="legend-dot" style="background:#ffd700; border-radius:50%;"></span>Response</span>
             <!-- Display the level objective: process 1000 requests with less than 1% error rate -->
             <span style="color:#ffd700; margin-left:10px;">Goal: 1000 Requests & Error Rate < 1%</span>
         </div>
@@ -58,6 +60,16 @@
                 <div class="stat-item">
                     <span class="stat-label">Current Load:</span>
                     <span class="stat-value" id="stat-load" style="color:#00ffff">Low</span>
+                </div>
+                <!-- Database storage indicator (only visible in Level 2) -->
+                <div class="stat-item" id="stat-db-storage-container" style="display:none;">
+                    <span class="stat-label">DB Storage:</span>
+                    <span class="stat-value" id="stat-db-storage" style="color:#ff6b35">0</span>
+                </div>
+                <!-- Database speed indicator (only visible in Level 2) -->
+                <div class="stat-item" id="stat-db-speed-container" style="display:none;">
+                    <span class="stat-label">DB Speed:</span>
+                    <span class="stat-value" id="stat-db-speed" style="color:#ffff00">800ms</span>
                 </div>
             </div>
 

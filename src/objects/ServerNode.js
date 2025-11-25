@@ -43,6 +43,7 @@ export class ServerNode extends Phaser.GameObjects.Container {
         // Performance characteristics
         this.capacity = capacity;   // Max concurrent requests (queue size)
         this.speed = speed;         // Processing time per request in milliseconds
+        this.baseSpeed = speed;     // Store original speed for database degradation calculations
         this.currentLoad = 0;       // Number of requests currently being processed
         
         // Local statistics (tracked per-node)
@@ -341,6 +342,7 @@ export class ServerNode extends Phaser.GameObjects.Container {
      * Determines where a packet should go next based on:
      * - Current node type
      * - Whether packet is a request or response
+     * - Whether it's a read or write request
      * - Architecture configuration (Level 1 vs Level 2)
      * 
      * Packet flow:
@@ -352,8 +354,29 @@ export class ServerNode extends Phaser.GameObjects.Container {
     routePacket(packet) {
         // Database finished processing - send response back to app
         if (this.type === 'database' && !packet.isResponse) {
+            // If this is a write request, increase database storage
+            if (packet.isWrite) {
+                GameState.databaseStorage += 1;
+                
+                // Update database processing speed based on storage
+                // As storage grows, operations become slower
+                // Formula: baseSpeed * (1 + storage / 100)
+                // Example: 800ms * (1 + 50/100) = 800ms * 1.5 = 1200ms
+                this.speed = Math.floor(this.baseSpeed * (1 + GameState.databaseStorage / 100));
+                
+                // Show visual feedback for write operation
+                this.showFloatText('+1 Data', '#ff6b35');
+            }
+            
             packet.isResponse = true;
-            packet.setFillStyle(CONFIG.colors.packetRes); // Change to gold (response color)
+            
+            // Change packet color to response (gold)
+            // Handle both circle packets (setFillStyle) and sprite packets (setTint)
+            if (packet.setFillStyle) {
+                packet.setFillStyle(CONFIG.colors.packetRes); // Circle packets
+            } else if (packet.setTint) {
+                packet.setTint(CONFIG.colors.packetRes); // Sprite packets (diamonds)
+            }
             
             // Send back to the app that forwarded this request
             if (packet.appNode && packet.appNode.active) {
@@ -385,7 +408,14 @@ export class ServerNode extends Phaser.GameObjects.Container {
                 // Level 1: Monolithic architecture - no database, respond directly
                 console.log('No database, sending response back');
                 packet.isResponse = true;
-                packet.setFillStyle(CONFIG.colors.packetRes); // Change to gold
+                
+                // Change packet color to response (gold)
+                // Handle both circle packets (setFillStyle) and sprite packets (setTint)
+                if (packet.setFillStyle) {
+                    packet.setFillStyle(CONFIG.colors.packetRes); // Circle packets
+                } else if (packet.setTint) {
+                    packet.setTint(CONFIG.colors.packetRes); // Sprite packets (diamonds)
+                }
                 
                 if (packet.sourceNode && packet.sourceNode.active) {
                     sendPacketAnim(this.scene, packet, packet.sourceNode, this);

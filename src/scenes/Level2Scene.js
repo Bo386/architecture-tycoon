@@ -418,22 +418,68 @@ export class Level2Scene extends Phaser.Scene {
      * In Level 2, packets will travel:
      * User → App → Database → App → User
      * 
+     * Packet types:
+     * - Read requests (70%): Cyan circles - retrieve data from database
+     * - Write requests (30%): Orange diamonds - add data to database
+     * 
      * @param {ServerNode} startNode - The user node generating the request
      */
     spawnPacket(startNode) {
         /**
-         * Create Packet Visual
-         * A small colored circle representing a request
+         * Determine Request Type
+         * Randomly decide if this is a write request based on configured percentage
          */
-        const packet = this.add.circle(
-            startNode.x,                    // Start at user's position
-            startNode.y, 
-            5,                              // 5 pixel radius
-            CONFIG.colors.packetReq         // Cyan color for requests
-        );
+        const isWrite = Math.random() * 100 < CONFIG.writeRequestPercentage;
+        
+        let packet;
+        
+        if (isWrite) {
+            /**
+             * Create Write Request Packet (Diamond Shape)
+             * Write requests are represented by cyan diamond shapes
+             * Diamond is drawn as a filled polygon with 4 vertices
+             * Same color as read requests to maintain consistency
+             */
+            const size = 6; // Half-size of diamond
+            
+            // Create graphics object and set fill color
+            const graphics = this.add.graphics();
+            graphics.fillStyle(CONFIG.colors.packetReq, 1); // Cyan color
+            
+            // Draw diamond shape using beginPath and lineTo
+            // Diamond has 4 points: top, right, bottom, left
+            graphics.beginPath();
+            graphics.moveTo(size, 0);      // Start at right point
+            graphics.lineTo(0, size);       // Draw to bottom point
+            graphics.lineTo(-size, 0);      // Draw to left point
+            graphics.lineTo(0, -size);      // Draw to top point
+            graphics.closePath();           // Close back to right point
+            graphics.fillPath();            // Fill the shape
+            
+            // Generate unique texture to avoid caching
+            const textureName = 'diamondPacket_' + Math.random().toString(36).substring(7);
+            graphics.generateTexture(textureName, size * 2 + 4, size * 2 + 4);
+            graphics.destroy();
+            
+            // Create sprite from texture
+            packet = this.add.sprite(startNode.x, startNode.y, textureName);
+            packet.isWrite = true; // Mark as write request
+        } else {
+            /**
+             * Create Read Request Packet (Circle Shape)
+             * Read requests are represented by cyan circles (traditional request color)
+             */
+            packet = this.add.circle(
+                startNode.x,
+                startNode.y, 
+                5,                          // 5 pixel radius
+                CONFIG.colors.packetReq     // Cyan color for read requests
+            );
+            packet.isWrite = false; // Mark as read request
+        }
         
         /**
-         * Set Packet Metadata
+         * Set Common Packet Metadata
          * Track where it came from and its type (request vs response)
          */
         packet.sourceNode = startNode;      // Remember originating user
@@ -445,6 +491,7 @@ export class Level2Scene extends Phaser.Scene {
          * 1. User routes to App
          * 2. App routes to Database
          * 3. Database processes and sends response back to App
+         *    - If write request: increases database storage, slows down database
          * 4. App forwards response back to User
          */
         startNode.routePacket(packet);
