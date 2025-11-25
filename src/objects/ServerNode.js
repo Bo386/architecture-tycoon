@@ -371,11 +371,13 @@ export class ServerNode extends Phaser.GameObjects.Container {
             packet.isResponse = true;
             
             // Change packet color to response (gold)
-            // Handle both circle packets (setFillStyle) and sprite packets (setTint)
+            // Handle different packet types: circles, sprites, and polygons
             if (packet.setFillStyle) {
                 packet.setFillStyle(CONFIG.colors.packetRes); // Circle packets
+            } else if (packet.fillColor !== undefined) {
+                packet.fillColor = CONFIG.colors.packetRes; // Polygon packets (diamonds)
             } else if (packet.setTint) {
-                packet.setTint(CONFIG.colors.packetRes); // Sprite packets (diamonds)
+                packet.setTint(CONFIG.colors.packetRes); // Sprite packets
             }
             
             // Send back to the app that forwarded this request

@@ -437,32 +437,28 @@ export class Level2Scene extends Phaser.Scene {
             /**
              * Create Write Request Packet (Diamond Shape)
              * Write requests are represented by cyan diamond shapes
-             * Diamond is drawn as a filled polygon with 4 vertices
+             * Use Phaser's Polygon to create a proper diamond
              * Same color as read requests to maintain consistency
              */
             const size = 6; // Half-size of diamond
             
-            // Create graphics object and set fill color
-            const graphics = this.add.graphics();
-            graphics.fillStyle(CONFIG.colors.packetReq, 1); // Cyan color
+            // Create diamond as a Phaser Polygon object
+            // Points: top, right, bottom, left (clockwise from top)
+            const points = [
+                0, -size,      // Top point
+                size, 0,       // Right point
+                0, size,       // Bottom point
+                -size, 0       // Left point
+            ];
             
-            // Draw diamond shape using beginPath and lineTo
-            // Diamond has 4 points: top, right, bottom, left
-            graphics.beginPath();
-            graphics.moveTo(size, 0);      // Start at right point
-            graphics.lineTo(0, size);       // Draw to bottom point
-            graphics.lineTo(-size, 0);      // Draw to left point
-            graphics.lineTo(0, -size);      // Draw to top point
-            graphics.closePath();           // Close back to right point
-            graphics.fillPath();            // Fill the shape
+            // Create polygon with cyan color
+            packet = this.add.polygon(
+                startNode.x, 
+                startNode.y, 
+                points, 
+                CONFIG.colors.packetReq  // Cyan color
+            );
             
-            // Generate unique texture to avoid caching
-            const textureName = 'diamondPacket_' + Math.random().toString(36).substring(7);
-            graphics.generateTexture(textureName, size * 2 + 4, size * 2 + 4);
-            graphics.destroy();
-            
-            // Create sprite from texture
-            packet = this.add.sprite(startNode.x, startNode.y, textureName);
             packet.isWrite = true; // Mark as write request
         } else {
             /**
