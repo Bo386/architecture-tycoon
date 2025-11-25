@@ -1,154 +1,299 @@
 /**
- * UI Manager
- * Handles UI updates and game state management
+ * UI Manager Module
+ * 
+ * Manages all updates to the HTML user interface based on game state changes.
+ * This module bridges the gap between the Phaser game engine and the DOM UI,
+ * keeping all displayed statistics, button states, and modal dialogs synchronized
+ * with the current game state.
+ * 
+ * Key responsibilities:
+ * - Update statistics display (money, requests, errors, error rate)
+ * - Manage button states (enable/disable based on game state)
+ * - Show/hide result modals with level completion information
+ * - Check win/lose conditions and trigger game end
  */
 
 import { CONFIG, GameState } from '../config.js';
 
 /**
- * Update all UI elements with current game state
+ * Update All UI Elements
+ * 
+ * Main UI update function that refreshes all HTML elements to reflect
+ * the current game state. Called frequently throughout the game
+ * (after each request, upgrade, state change, etc.)
+ * 
+ * Updates:
+ * - Money/budget display
+ * - Request statistics (total, success, errors)
+ * - Progress label (adjusts target based on current level)
+ * - Error rate percentage
+ * - System load indicator
+ * - Upgrade button availability
+ * - Start button state
  */
 export function updateUI() {
+    // Update budget display
     document.getElementById('ui-money').innerText = GameState.money;
     
-    // Update progress display based on current level
+    /**
+     * Update progress display with level-specific target
+     * Level 1 requires 1000 requests, Level 2 requires 100
+     */
     const target = GameState.currentLevel === 2 ? CONFIG.level2Target : CONFIG.targetTotal;
     const statTotalEl = document.getElementById('stat-total');
     if (statTotalEl) {
         statTotalEl.innerText = GameState.total;
     }
     
-    // Update progress label if needed
+    /**
+     * Update progress label to show the correct target
+     * This changes the "Progress (1000):" text based on current level
+     */
     const progressLabel = document.querySelector('.stat-item .stat-label');
     if (progressLabel && progressLabel.textContent.includes('Progress')) {
         progressLabel.textContent = `Progress (${target}):`;
     }
     
+    // Update success count (green text)
     document.getElementById('stat-success').innerText = GameState.success;
+    
+    // Update error count (red text)
     document.getElementById('stat-errors').innerText = GameState.errors;
 
-    updateErrorRate();
-    updateLoadIndicator();
-    updateUpgradeButton();
-    updateStartButton();
+    // Update derived/calculated UI elements
+    updateErrorRate();          // Calculate and display error percentage
+    updateLoadIndicator();      // Show current system load level
+    updateUpgradeButton();      // Enable/disable upgrade button based on money
+    updateStartButton();        // Update start button state and text
 }
 
 /**
- * Update error rate display
+ * Update Error Rate Display
+ * 
+ * Calculates the error rate percentage and updates both the display text
+ * and color based on whether it's within acceptable limits.
+ * 
+ * Error rate calculation: (errors / total) * 100
+ * 
+ * Color coding:
+ * - White (#e0e0e0): Error rate is acceptable (< 1%)
+ * - Red (#ff4444): Error rate exceeded threshold (> 1%) with enough samples
  */
 function updateErrorRate() {
     let rate = 0;
+    
+    // Only calculate if we have processed requests
     if (GameState.total > 0) {
         rate = (GameState.errors / GameState.total) * 100;
     }
     
+    // Update the displayed percentage
     const rateEl = document.getElementById('stat-rate');
     rateEl.innerText = rate.toFixed(1) + '%';
     
+    /**
+     * Color the error rate red if it exceeds the maximum allowed
+     * Only apply red coloring after 10 requests to avoid false alarms
+     * from early random variations
+     */
     if (rate > CONFIG.maxErrorRate && GameState.total > 10) {
-        rateEl.style.color = '#ff4444';
+        rateEl.style.color = '#ff4444'; // Red - failing
     } else {
-        rateEl.style.color = '#e0e0e0';
+        rateEl.style.color = '#e0e0e0'; // White - acceptable
     }
 }
 
 /**
- * Update load indicator
+ * Update Load Indicator
+ * 
+ * Updates the "Current Load" display to show system stress level.
+ * The load level is determined by the difficulty level, which increases
+ * as the simulation progresses.
+ * 
+ * Load levels:
+ * - Idle: Simulation not running
+ * - Low/Med (green): Difficulty level 0-3
+ * - High (yellow): Difficulty level 4-7
+ * - Extreme (red): Difficulty level 8+
  */
 function updateLoadIndicator() {
     const loadEl = document.getElementById('stat-load');
     
+    // If simulation isn't running, show Idle
     if (!GameState.isRunning) {
         loadEl.innerText = "Idle";
-    } else if (GameState.difficultyLevel < 4) {
+        loadEl.style.color = "#00ffff"; // Cyan (default color)
+    } 
+    // Low to medium difficulty
+    else if (GameState.difficultyLevel < 4) {
         loadEl.innerText = "Low/Med";
-        loadEl.style.color = "#00ff00";
-    } else if (GameState.difficultyLevel < 8) {
+        loadEl.style.color = "#00ff00"; // Green
+    } 
+    // High difficulty
+    else if (GameState.difficultyLevel < 8) {
         loadEl.innerText = "High";
-        loadEl.style.color = "#ffff00";
-    } else {
+        loadEl.style.color = "#ffff00"; // Yellow - warning
+    } 
+    // Extreme difficulty
+    else {
         loadEl.innerText = "Extreme";
-        loadEl.style.color = "#ff0000";
+        loadEl.style.color = "#ff0000"; // Red - critical
     }
 }
 
 /**
- * Update upgrade button state
+ * Update Upgrade Button State
+ * 
+ * Enables or disables the upgrade button based on available funds.
+ * Also updates the button text to show cost or "Insufficient Funds".
+ * 
+ * Button states:
+ * - Enabled: Player has enough money (≥ $200)
+ * - Disabled: Player doesn't have enough money (< $200)
  */
 function updateUpgradeButton() {
     const upgradeBtn = document.getElementById('btn-upgrade');
     
+    // Check if player has enough money for an upgrade
     if (GameState.money < CONFIG.upgradeCost) {
+        // Insufficient funds - disable button and show message
         upgradeBtn.disabled = true;
         upgradeBtn.innerHTML = `<span>⬆ Insufficient Funds</span>`;
     } else {
+        // Sufficient funds - enable button and show cost
         upgradeBtn.disabled = false;
         upgradeBtn.innerHTML = `<span>⬆ Upgrade Server ($${CONFIG.upgradeCost})</span>`;
     }
 }
 
 /**
- * Update start button state
+ * Update Start Button State
+ * 
+ * Updates the start button's enabled state and text based on game status.
+ * The button should only be clickable when the game is ready to start.
+ * 
+ * Button states:
+ * - "▶ Start" (enabled): Ready to begin simulation
+ * - "Running..." (disabled): Simulation in progress
+ * - "Finished" (disabled): Level completed
  */
 function updateStartButton() {
     const startBtn = document.getElementById('btn-start');
     
+    // Disable button if simulation is running or game is over
     if (GameState.isRunning || GameState.isGameOver) {
         startBtn.disabled = true;
-        startBtn.style.opacity = 0.5;
+        startBtn.style.opacity = 0.5; // Visual feedback for disabled state
+        
+        // Show appropriate text based on state
         startBtn.innerHTML = GameState.isGameOver ? 
             `<span>Finished</span>` : 
             `<span>Running...</span>`;
-    } else {
+    } 
+    // Enable button when ready to start
+    else {
         startBtn.disabled = false;
-        startBtn.style.opacity = 1;
+        startBtn.style.opacity = 1; // Full opacity when enabled
         startBtn.innerHTML = `<span>▶ Start</span>`;
     }
 }
 
 /**
- * Check if game has ended
+ * Check Game End Condition
+ * 
+ * Evaluates whether the level objectives have been met and triggers
+ * the end-game sequence if complete.
+ * 
+ * Called after each request is processed to check if we've reached
+ * the target number of requests.
+ * 
+ * @param {Phaser.Scene} scene - The active game scene (needed to stop timers)
  */
 export function checkGameEnd(scene) {
+    // Don't check again if game already ended
     if (GameState.isGameOver) return;
 
+    // Get the target based on current level
     const target = GameState.currentLevel === 2 ? CONFIG.level2Target : CONFIG.targetTotal;
+    
+    // Check if we've processed enough requests
     if (GameState.total >= target) {
         endGame(scene);
     }
 }
 
 /**
- * End the game and show results
+ * End Game and Show Results
+ * 
+ * Terminates the current simulation and displays the results modal.
+ * Stops all timers, calculates final statistics, and determines win/lose status.
+ * 
+ * Win condition: Error rate < 1%
+ * Lose condition: Error rate ≥ 1%
+ * 
+ * @param {Phaser.Scene} scene - The active game scene (needed to stop timers)
  */
 function endGame(scene) {
+    // Update game state flags
     GameState.isRunning = false;
     GameState.isGameOver = true;
 
-    // Stop traffic
+    /**
+     * Stop All Active Timers
+     * This prevents new requests from being generated and stops
+     * difficulty increases after the level ends
+     */
     if (scene.trafficTimer) scene.trafficTimer.remove();
     if (scene.difficultyTimer) scene.difficultyTimer.remove();
 
+    // Calculate final error rate
     const rate = (GameState.errors / GameState.total) * 100;
+    
+    // Determine win/lose based on error rate
     const isWin = rate < CONFIG.maxErrorRate;
 
+    // Display the results modal
     showResultModal(isWin, rate);
 }
 
 /**
- * Display result modal
+ * Display Result Modal
+ * 
+ * Shows a modal dialog with the level completion results, including:
+ * - Win/lose status
+ * - Final error rate
+ * - Educational content about architecture concepts
+ * - Option to retry or proceed to next level
+ * 
+ * The modal content is customized based on:
+ * - Win vs lose status
+ * - Current level (Level 1 vs Level 2)
+ * 
+ * @param {boolean} isWin - Whether the player met the win condition
+ * @param {number} rate - Final error rate percentage
  */
 function showResultModal(isWin, rate) {
+    // Get modal elements from DOM
     const modal = document.getElementById('result-modal');
     const title = document.getElementById('modal-title');
     const body = document.getElementById('modal-body');
     const btnNext = document.getElementById('btn-modal-next');
 
+    // Show the modal
     modal.style.display = 'block';
     modal.classList.add('show');
+    
+    // Apply theme class for win/lose styling (can be used for CSS)
     modal.className = isWin ? 'win-theme show' : 'lose-theme show';
 
+    /**
+     * Win Condition - Show Success Message and Educational Content
+     */
     if (isWin) {
+        /**
+         * Level 1 Success
+         * Explains vertical scaling concept and its trade-offs
+         */
         if (GameState.currentLevel === 1) {
             title.innerText = "Level 1 Complete!";
             body.innerHTML = `
@@ -165,8 +310,14 @@ function showResultModal(isWin, rate) {
                     </ul>
                 </div>
             `;
+            // Show "Enter Level 2" button
             btnNext.style.display = 'inline-block';
-        } else if (GameState.currentLevel === 2) {
+        } 
+        /**
+         * Level 2 Success
+         * Explains database layer concepts and challenges
+         */
+        else if (GameState.currentLevel === 2) {
             title.innerText = "Level 2 Complete!";
             body.innerHTML = `
                 <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
@@ -187,9 +338,14 @@ function showResultModal(isWin, rate) {
                     <strong>Key Insight:</strong> Every layer you add increases complexity and latency. Database optimization and caching strategies become critical at scale.
                 </div>
             `;
-            btnNext.style.display = 'none'; // No Level 3 yet
+            // No Level 3 yet, hide next button
+            btnNext.style.display = 'none';
         }
-    } else {
+    } 
+    /**
+     * Lose Condition - Show Failure Message and Suggestions
+     */
+    else {
         title.innerText = "Mission Failed";
         const target = GameState.currentLevel === 2 ? CONFIG.level2Target : CONFIG.targetTotal;
         body.innerHTML = `
@@ -197,6 +353,7 @@ function showResultModal(isWin, rate) {
             <p>System crashed under high pressure, user experience was poor.</p>
             <p>Suggestion: Upgrade servers earlier, or prepare before pressure arrives.</p>
         `;
+        // Hide next level button on failure
         btnNext.style.display = 'none';
     }
 }

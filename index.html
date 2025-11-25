@@ -3,86 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Page title - reflects the current level in the game -->
     <title>Architecture Simulator: Level 1 - Performance Bottleneck</title>
+    <!-- Link to custom styles for the application UI -->
     <link rel="stylesheet" href="css/styles.css">
+    <!-- Import Phaser 3 game framework from CDN for rendering game graphics and handling game logic -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
 </head>
 <body>
-    <!-- Top Header -->
+    <!-- Top Header Section: Displays level title and legend for visual elements -->
     <div id="header">
         <h1>Level 1: Monolithic Architecture Scaling</h1>
+        <!-- Legend box: Explains the meaning of colored dots/elements in the game -->
         <div class="legend-box">
+            <!-- Cyan dot represents incoming requests -->
             <span><span class="legend-dot" style="background:#00ffff"></span>Request</span>
+            <!-- Gold dot represents outgoing responses -->
             <span><span class="legend-dot" style="background:#ffd700"></span>Response</span>
+            <!-- Display the level objective: process 1000 requests with less than 1% error rate -->
             <span style="color:#ffd700; margin-left:10px;">Goal: 1000 Requests & Error Rate < 1%</span>
         </div>
     </div>
 
-    <!-- Main Content Area -->
+    <!-- Main Content Area: Contains the game interface divided into left sidebar and right content -->
     <div id="main-content">
-        <!-- Left Sidebar -->
+        <!-- Left Sidebar: Displays monitoring statistics and objectives -->
         <div id="left-sidebar">
+            <!-- Monitoring Section: Real-time statistics about request processing -->
             <div class="sidebar-section">
                 <h3>Monitoring</h3>
+                <!-- Total requests processed - goal is 1000 -->
                 <div class="stat-item">
                     <span class="stat-label">Progress (1000):</span>
                     <span class="stat-value" id="stat-total">0</span>
                 </div>
+                <!-- Count of successfully processed requests (shown in green) -->
                 <div class="stat-item">
                     <span class="stat-label">Success:</span>
                     <span class="stat-value" style="color:#00ff00" id="stat-success">0</span>
                 </div>
+                <!-- Count of failed requests (shown in red) -->
                 <div class="stat-item">
                     <span class="stat-label">Errors:</span>
                     <span class="stat-value" style="color:#ff4444" id="stat-errors">0</span>
                 </div>
+                <!-- Visual divider to separate basic stats from calculated metrics -->
                 <div class="stat-divider"></div>
+                <!-- Calculated error rate percentage (errors / total * 100) -->
                 <div class="stat-item">
                     <span class="stat-label">Error Rate:</span>
                     <span class="stat-value" id="stat-rate">0.0%</span>
                 </div>
+                <!-- Current system load indicator (Low/Medium/High) based on concurrent requests -->
                 <div class="stat-item">
                     <span class="stat-label">Current Load:</span>
                     <span class="stat-value" id="stat-load" style="color:#00ffff">Low</span>
                 </div>
             </div>
 
+            <!-- Objectives Section: Lists the goals players need to achieve -->
             <div class="sidebar-section">
                 <h3>Objectives</h3>
                 <ul class="objectives-list">
+                    <!-- Primary objective: process all 1000 requests -->
                     <li>Complete 1000 requests</li>
+                    <!-- Quality objective: keep error rate below 1% threshold -->
                     <li>Maintain error rate < 1%</li>
+                    <!-- Resource management: don't waste money on unnecessary upgrades -->
                     <li>Manage your budget wisely</li>
                 </ul>
             </div>
         </div>
 
-        <!-- Right Content Area -->
+        <!-- Right Content Area: Contains the main game canvas and control panel -->
         <div id="right-content">
-            <!-- Architecture Display Area -->
+            <!-- Architecture Display Area: Container for the Phaser game canvas -->
             <div id="architecture-area">
+                <!-- The Phaser game will inject its canvas into this container -->
                 <div id="game-container"></div>
             </div>
 
-            <!-- Control Panel at Bottom -->
+            <!-- Control Panel: Bottom panel with budget display and action buttons -->
             <div id="control-panel">
+                <!-- Budget Display: Shows remaining money for upgrades -->
                 <div class="budget-display">
                     Budget: $<span id="ui-money">500</span>
                 </div>
                 
+                <!-- Button Group: Main control buttons for game actions -->
                 <div class="button-group">
+                    <!-- Start Button: Initiates the simulation/request processing -->
                     <button id="btn-start" class="start">
                         <span>▶ Start</span>
                     </button>
 
+                    <!-- Upgrade Button: Improves server capacity (costs $200) -->
+                    <!-- Disabled by default, enabled when simulation starts and player has enough money -->
                     <button id="btn-upgrade" class="upgrade" disabled>
                         <span>⬆ Upgrade Server ($200)</span>
                     </button>
 
+                    <!-- Reset Button: Restarts the current level from the beginning -->
                     <button id="btn-reset" class="reset">
                         <span>↺ Reset</span>
                     </button>
 
+                    <!-- Skip Button: Allows player to bypass the current level (for testing/debugging) -->
                     <button id="btn-skip" class="skip">
                         <span>⏭ Skip Level</span>
                     </button>
@@ -91,21 +117,30 @@
         </div>
     </div>
 
-    <!-- Toast Notification -->
+    <!-- Toast Notification: Temporary alert that appears when game difficulty increases -->
+    <!-- Hidden by default, shown via JavaScript when traffic surge occurs -->
     <div id="difficulty-toast">⚠ Traffic Surge! Concurrency Increased</div>
 
-    <!-- Result Modal -->
+    <!-- Result Modal: Popup dialog shown when level is completed (success or failure) -->
+    <!-- Hidden by default via CSS, displayed when simulation ends -->
     <div id="result-modal">
+        <!-- Modal title changes based on success/failure -->
         <h2 id="modal-title">Congratulations!</h2>
+        <!-- Modal body content is dynamically generated by JavaScript -->
         <div class="modal-content" id="modal-body">
-            <!-- Dynamic content -->
+            <!-- Dynamic content will be inserted here -->
         </div>
+        <!-- Modal footer contains action buttons -->
         <div class="modal-footer">
+            <!-- Retry button: restart the current level -->
             <button id="btn-modal-retry" class="reset">Retry</button>
+            <!-- Next level button: proceed to Level 2 -->
             <button id="btn-modal-next" class="start">Enter Level 2</button>
         </div>
     </div>
 
+    <!-- Main JavaScript module: Entry point for the application -->
+    <!-- type="module" enables ES6 module syntax (import/export) -->
     <script type="module" src="src/main.js"></script>
 </body>
 </html>
