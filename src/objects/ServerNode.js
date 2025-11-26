@@ -79,9 +79,40 @@ export class ServerNode extends Phaser.GameObjects.Container {
         const w = 80;
         const h = 60;
         
-        // Background rectangle representing the server
-        this.bg = this.scene.add.rectangle(0, 0, w, h, CONFIG.colors.node);
-        this.bg.setStrokeStyle(2, CONFIG.colors.nodeBorder);
+        // Create shape based on node type and store dimensions
+        if (this.type === 'user') {
+            // User: Circle (represents client/user)
+            this.bg = this.scene.add.circle(0, 0, 35, CONFIG.colors.node);
+            this.bg.setStrokeStyle(2, CONFIG.colors.nodeBorder);
+            this.bg.width = 70;  // Diameter
+            this.bg.height = 70;
+        } else if (this.type === 'database') {
+            // Database: Cylinder (industry standard for database)
+            // Draw using Graphics for cylinder shape
+            this.bg = this.scene.add.graphics();
+            this.drawCylinder(this.bg, 0, 0, w, h);
+            this.bg.width = w;   // Store dimensions for later use
+            this.bg.height = h;
+            this.bg.isGraphics = true;  // Flag to identify Graphics objects
+        } else if (this.type === 'cache') {
+            // Cache: Diamond (represents cache layer)
+            this.bg = this.scene.add.graphics();
+            this.drawDiamond(this.bg, 0, 0, w * 0.9, h * 0.9);
+            this.bg.width = w * 0.9;
+            this.bg.height = h * 0.9;
+            this.bg.isGraphics = true;
+        } else if (this.type === 'loadbalancer') {
+            // Load Balancer: Hexagon (represents traffic distributor)
+            this.bg = this.scene.add.graphics();
+            this.drawHexagon(this.bg, 0, 0, 40);
+            this.bg.width = 80;  // Approximate width
+            this.bg.height = 80;
+            this.bg.isGraphics = true;
+        } else {
+            // App Server: Rectangle (standard server shape)
+            this.bg = this.scene.add.rectangle(0, 0, w, h, CONFIG.colors.node);
+            this.bg.setStrokeStyle(2, CONFIG.colors.nodeBorder);
+        }
         
         // Database-specific: Storage display
         if (this.type === 'database') {
@@ -149,6 +180,97 @@ export class ServerNode extends Phaser.GameObjects.Container {
         } else if (this.type === 'app' || this.type === 'database') {
             this.createServerStats();    // Show level badge
         }
+    }
+
+    /**
+     * Draw Cylinder Shape (for Database nodes)
+     * 
+     * @param {Phaser.GameObjects.Graphics} graphics - Graphics object to draw on
+     * @param {number} x - Center X position
+     * @param {number} y - Center Y position
+     * @param {number} w - Width
+     * @param {number} h - Height
+     * @param {number} borderColor - Border color (optional)
+     * @param {number} strokeWidth - Stroke width (optional)
+     */
+    drawCylinder(graphics, x, y, w, h, borderColor, strokeWidth) {
+        const topHeight = h * 0.15; // Ellipse height at top
+        
+        graphics.fillStyle(CONFIG.colors.node, 1);
+        graphics.lineStyle(strokeWidth || 2, borderColor || CONFIG.colors.nodeBorder);
+        
+        // Draw main body (rectangle)
+        graphics.fillRect(x - w/2, y - h/2 + topHeight, w, h - topHeight * 2);
+        graphics.strokeRect(x - w/2, y - h/2 + topHeight, w, h - topHeight * 2);
+        
+        // Draw bottom ellipse
+        graphics.fillEllipse(x, y + h/2 - topHeight, w/2, topHeight);
+        graphics.strokeEllipse(x, y + h/2 - topHeight, w/2, topHeight);
+        
+        // Draw top ellipse (appears above the body)
+        graphics.fillEllipse(x, y - h/2 + topHeight, w/2, topHeight);
+        graphics.strokeEllipse(x, y - h/2 + topHeight, w/2, topHeight);
+    }
+    
+    /**
+     * Draw Diamond Shape (for Cache nodes)
+     * 
+     * @param {Phaser.GameObjects.Graphics} graphics - Graphics object to draw on
+     * @param {number} x - Center X position
+     * @param {number} y - Center Y position
+     * @param {number} w - Width
+     * @param {number} h - Height
+     * @param {number} borderColor - Border color (optional)
+     * @param {number} strokeWidth - Stroke width (optional)
+     */
+    drawDiamond(graphics, x, y, w, h, borderColor, strokeWidth) {
+        graphics.fillStyle(CONFIG.colors.node, 1);
+        graphics.lineStyle(strokeWidth || 2, borderColor || CONFIG.colors.nodeBorder);
+        
+        // Draw diamond shape
+        graphics.beginPath();
+        graphics.moveTo(x, y - h/2);           // Top point
+        graphics.lineTo(x + w/2, y);           // Right point
+        graphics.lineTo(x, y + h/2);           // Bottom point
+        graphics.lineTo(x - w/2, y);           // Left point
+        graphics.closePath();
+        
+        graphics.fillPath();
+        graphics.strokePath();
+    }
+    
+    /**
+     * Draw Hexagon Shape (for Load Balancer nodes)
+     * 
+     * @param {Phaser.GameObjects.Graphics} graphics - Graphics object to draw on
+     * @param {number} x - Center X position
+     * @param {number} y - Center Y position
+     * @param {number} radius - Radius of hexagon
+     * @param {number} borderColor - Border color (optional)
+     * @param {number} strokeWidth - Stroke width (optional)
+     */
+    drawHexagon(graphics, x, y, radius, borderColor, strokeWidth) {
+        graphics.fillStyle(CONFIG.colors.node, 1);
+        graphics.lineStyle(strokeWidth || 2, borderColor || CONFIG.colors.nodeBorder);
+        
+        graphics.beginPath();
+        
+        // Draw hexagon with 6 points
+        for (let i = 0; i < 6; i++) {
+            const angle = (Math.PI / 3) * i - Math.PI / 2; // Start from top
+            const px = x + radius * Math.cos(angle);
+            const py = y + radius * Math.sin(angle);
+            
+            if (i === 0) {
+                graphics.moveTo(px, py);
+            } else {
+                graphics.lineTo(px, py);
+            }
+        }
+        
+        graphics.closePath();
+        graphics.fillPath();
+        graphics.strokePath();
     }
 
     /**
@@ -225,8 +347,14 @@ export class ServerNode extends Phaser.GameObjects.Container {
         if (this.level === 2) newBorderColor = 0xbd00ff; // Purple for level 2
         if (this.level >= 3) newBorderColor = 0xffd700;  // Gold for level 3+
 
-        // Apply new border style
-        this.bg.setStrokeStyle(newStrokeWidth, newBorderColor);
+        // Apply new border style - different for Graphics vs Rectangle/Circle
+        if (this.bg.isGraphics) {
+            // For Graphics objects, redraw the shape with new border
+            this.redrawShape(newBorderColor, newStrokeWidth);
+        } else {
+            // For Rectangle/Circle objects
+            this.bg.setStrokeStyle(newStrokeWidth, newBorderColor);
+        }
         
         // Update level badge text and color
         if (this.levelText) {
@@ -237,6 +365,34 @@ export class ServerNode extends Phaser.GameObjects.Container {
         // Play visual effects
         this.playUpgradeAnimation(newBorderColor);
         this.showFloatText('UPGRADE!', '#ffd700');
+    }
+    
+    /**
+     * Redraw Shape (for Graphics objects)
+     * 
+     * Redraws the shape with a new border color and width.
+     * Used when upgrading nodes that use Graphics objects.
+     * 
+     * @param {number} borderColor - New border color
+     * @param {number} strokeWidth - New stroke width
+     */
+    redrawShape(borderColor, strokeWidth) {
+        if (!this.bg.isGraphics) return;
+        
+        // Clear existing graphics
+        this.bg.clear();
+        
+        // Redraw based on type
+        const w = this.bg.width;
+        const h = this.bg.height;
+        
+        if (this.type === 'database') {
+            this.drawCylinder(this.bg, 0, 0, w, h, borderColor, strokeWidth);
+        } else if (this.type === 'cache') {
+            this.drawDiamond(this.bg, 0, 0, w, h, borderColor, strokeWidth);
+        } else if (this.type === 'loadbalancer') {
+            this.drawHexagon(this.bg, 0, 0, 40, borderColor, strokeWidth);
+        }
     }
 
     /**
@@ -580,8 +736,8 @@ export class ServerNode extends Phaser.GameObjects.Container {
                 }
             }
         }
-        // User sends request to app
-        else if (this.type === 'user' && !packet.isResponse) {
+        // LoadBalancer receives request - intelligently route to least loaded app server
+        else if (this.type === 'loadbalancer' && !packet.isResponse) {
             // Find all available app servers
             const appServers = Object.keys(GameState.nodes)
                 .filter(key => key.startsWith('App'))
@@ -589,10 +745,65 @@ export class ServerNode extends Phaser.GameObjects.Container {
                 .filter(app => app && app.active);
             
             if (appServers.length > 0) {
-                // Use round-robin or random selection for load balancing
-                const randomIndex = Math.floor(Math.random() * appServers.length);
-                const target = appServers[randomIndex];
-                sendPacketAnim(this.scene, packet, target, this);
+                // Select app server with lowest current load (intelligent load balancing)
+                let selectedServer = appServers[0];
+                let lowestLoadRatio = selectedServer.currentLoad / selectedServer.capacity;
+                
+                for (let i = 1; i < appServers.length; i++) {
+                    const server = appServers[i];
+                    const loadRatio = server.currentLoad / server.capacity;
+                    if (loadRatio < lowestLoadRatio) {
+                        lowestLoadRatio = loadRatio;
+                        selectedServer = server;
+                    }
+                }
+                
+                // Debug logging to verify load balancing is working
+                console.log('Load Balancer routing decision:');
+                appServers.forEach(server => {
+                    const ratio = (server.currentLoad / server.capacity * 100).toFixed(1);
+                    const isSelected = server === selectedServer;
+                    console.log(`  ${server.name}: ${server.currentLoad}/${server.capacity} (${ratio}%) ${isSelected ? '← SELECTED' : ''}`);
+                });
+                
+                // Show visual feedback on load balancer
+                const serverNum = selectedServer.name.includes('1') ? '1' : '2';
+                this.showFloatText(`→ App ${serverNum}`, '#9c27b0');
+                
+                sendPacketAnim(this.scene, packet, selectedServer, this);
+            } else {
+                packet.destroy();
+            }
+        }
+        // LoadBalancer receives response - forward back to original user
+        else if (this.type === 'loadbalancer' && packet.isResponse) {
+            if (packet.sourceNode && packet.sourceNode.active) {
+                sendPacketAnim(this.scene, packet, packet.sourceNode, this);
+            } else {
+                packet.destroy();
+            }
+        }
+        // User sends request to load balancer or app
+        else if (this.type === 'user' && !packet.isResponse) {
+            // Check if load balancer exists
+            const loadBalancer = GameState.nodes['LoadBalancer1'];
+            
+            if (loadBalancer && loadBalancer.active) {
+                // Route through load balancer
+                sendPacketAnim(this.scene, packet, loadBalancer, this);
+            } else {
+                // Find all available app servers
+                const appServers = Object.keys(GameState.nodes)
+                    .filter(key => key.startsWith('App'))
+                    .map(key => GameState.nodes[key])
+                    .filter(app => app && app.active);
+                
+                if (appServers.length > 0) {
+                    // Use random selection without load balancer
+                    const randomIndex = Math.floor(Math.random() * appServers.length);
+                    const target = appServers[randomIndex];
+                    sendPacketAnim(this.scene, packet, target, this);
+                }
             }
         }
     }
@@ -662,19 +873,37 @@ export class ServerNode extends Phaser.GameObjects.Container {
      * Used when a packet is dropped due to capacity overflow.
      */
     flashRed() {
-        this.scene.tweens.add({ 
-            targets: this.bg, 
-            strokeColor: 0xff0000,  // Change to red
-            duration: 100,          // Brief flash
-            yoyo: true,             // Return to original color
-            onComplete: () => {
-                // Restore original border color based on level
+        // For Graphics objects, we need to redraw instead of tweening strokeColor
+        if (this.bg.isGraphics) {
+            // Get current stroke width
+            const strokeWidth = 2 + (this.level - 1) * 2;
+            
+            // Flash red temporarily
+            this.redrawShape(0xff0000, strokeWidth);
+            
+            // After 100ms, restore original color
+            this.scene.time.delayedCall(100, () => {
                 let color = CONFIG.colors.nodeBorder;
                 if (this.level === 2) color = 0xbd00ff;     // Purple
                 if (this.level >= 3) color = 0xffd700;      // Gold
-                this.bg.setStrokeStyle(this.bg.lineWidth, color);
-            } 
-        });
+                this.redrawShape(color, strokeWidth);
+            });
+        } else {
+            // For Rectangle/Circle objects, use tween
+            this.scene.tweens.add({ 
+                targets: this.bg, 
+                strokeColor: 0xff0000,  // Change to red
+                duration: 100,          // Brief flash
+                yoyo: true,             // Return to original color
+                onComplete: () => {
+                    // Restore original border color based on level
+                    let color = CONFIG.colors.nodeBorder;
+                    if (this.level === 2) color = 0xbd00ff;     // Purple
+                    if (this.level >= 3) color = 0xffd700;      // Gold
+                    this.bg.setStrokeStyle(this.bg.lineWidth, color);
+                } 
+            });
+        }
     }
 
     /**

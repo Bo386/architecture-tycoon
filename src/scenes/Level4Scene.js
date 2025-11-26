@@ -567,7 +567,10 @@ export class Level4Scene extends Phaser.Scene {
             </div>
         `;
         
-        // Show next button if there's a Level 5
-        btnNext.style.display = 'none';
+        // Show next button to go to Level 5
+        btnNext.style.display = 'inline-block';
+        btnNext.onclick = () => {
+            this.scene.start('Level5Scene');
+        };
     }
 }

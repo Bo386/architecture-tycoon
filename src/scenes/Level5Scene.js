@@ -453,6 +453,9 @@ export class Level5Scene extends Phaser.Scene {
         `;
         
         // No Level 6 yet, hide next button
-        btnNext.style.display = 'none';
+        btnNext.style.display = 'inline-block';
+        btnNext.onclick = () => {
+            this.scene.start('Level6Scene');
+        };
     }
 }
