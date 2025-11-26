@@ -358,4 +358,61 @@ function setupEventHandlers() {
     } else {
         console.error('Level selector element not found!');
     }
+
+    /**
+     * Zoom In Button Handler
+     * 
+     * Increases the camera zoom level (zoom in).
+     */
+    document.getElementById('btn-zoom-in').addEventListener('click', () => {
+        const level1Scene = game.scene.getScene('Level1Scene');
+        const level2Scene = game.scene.getScene('Level2Scene');
+        const level3Scene = game.scene.getScene('Level3Scene');
+        
+        const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
+                           (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
+                           (level3Scene && level3Scene.sys.settings.active) ? level3Scene : null;
+        
+        if (activeScene && activeScene.adjustZoom) {
+            activeScene.adjustZoom(0.1);
+        }
+    });
+
+    /**
+     * Zoom Out Button Handler
+     * 
+     * Decreases the camera zoom level (zoom out).
+     */
+    document.getElementById('btn-zoom-out').addEventListener('click', () => {
+        const level1Scene = game.scene.getScene('Level1Scene');
+        const level2Scene = game.scene.getScene('Level2Scene');
+        const level3Scene = game.scene.getScene('Level3Scene');
+        
+        const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
+                           (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
+                           (level3Scene && level3Scene.sys.settings.active) ? level3Scene : null;
+        
+        if (activeScene && activeScene.adjustZoom) {
+            activeScene.adjustZoom(-0.1);
+        }
+    });
+
+    /**
+     * Reset Zoom Button Handler
+     * 
+     * Resets the camera zoom to 100% (default).
+     */
+    document.getElementById('btn-zoom-reset').addEventListener('click', () => {
+        const level1Scene = game.scene.getScene('Level1Scene');
+        const level2Scene = game.scene.getScene('Level2Scene');
+        const level3Scene = game.scene.getScene('Level3Scene');
+        
+        const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
+                           (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
+                           (level3Scene && level3Scene.sys.settings.active) ? level3Scene : null;
+        
+        if (activeScene && activeScene.resetZoom) {
+            activeScene.resetZoom();
+        }
+    });
 }

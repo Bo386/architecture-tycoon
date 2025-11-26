@@ -106,6 +106,58 @@ export class Level2Scene extends Phaser.Scene {
         // Set up visual elements and create server nodes
         this.setupBackground();
         this.createNodes();
+        this.setupZoom();
+    }
+
+    /**
+     * Setup Zoom Controls
+     * 
+     * Enables camera zoom functionality with mouse wheel and programmatic controls.
+     */
+    setupZoom() {
+        // Set initial zoom level
+        this.cameras.main.setZoom(1);
+        this.currentZoom = 1;
+        this.minZoom = 0.5;
+        this.maxZoom = 2.0;
+
+        // Enable mouse wheel zoom
+        this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
+            // deltaY > 0 means scroll down (zoom out), < 0 means scroll up (zoom in)
+            const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
+            this.adjustZoom(zoomDelta);
+        });
+    }
+
+    /**
+     * Adjust Zoom Level
+     * 
+     * @param {number} delta - Amount to change zoom (positive = zoom in, negative = zoom out)
+     */
+    adjustZoom(delta) {
+        this.currentZoom += delta;
+        this.currentZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.currentZoom));
+        
+        this.cameras.main.setZoom(this.currentZoom);
+        
+        // Update zoom display if it exists
+        const zoomDisplay = document.getElementById('zoom-level');
+        if (zoomDisplay) {
+            zoomDisplay.textContent = Math.round(this.currentZoom * 100) + '%';
+        }
+    }
+
+    /**
+     * Reset Zoom to Default
+     */
+    resetZoom() {
+        this.currentZoom = 1;
+        this.cameras.main.setZoom(1);
+        
+        const zoomDisplay = document.getElementById('zoom-level');
+        if (zoomDisplay) {
+            zoomDisplay.textContent = '100%';
+        }
     }
 
     /**
