@@ -45,6 +45,7 @@ export const CONFIG = {
     targetTotal: 1000,          // Level 1: Total requests that must be processed to complete
     maxErrorRate: 1.0,          // Maximum acceptable error rate percentage (1% = 1.0)
     level2Target: 800,          // Level 2: Increased target (requires 300 requests to test database scalability)
+    level3Target: 1000,         // Level 3: Further increased target to test multi-database scalability
     
     /**
      * Level 2 Configuration
@@ -117,6 +118,79 @@ export const CONFIG = {
                 message: "Maximum database load"
             }
         }
+    },
+    
+    /**
+     * Level 3 Configuration
+     * Same layout as Level 2 but with ability to add more database servers
+     */
+    level3: {
+        // Initial traffic generation settings
+        initialTrafficDelay: 2000,      // Initial delay between traffic waves (ms)
+        initialPacketsPerWave: 1,       // Starting number of packets per wave
+        difficultyInterval: 10000,      // Time between difficulty increases (ms)
+        
+        // Server node configurations
+        servers: {
+            user: {
+                capacity: 999,          // User nodes have unlimited capacity
+                speed: 10               // Instant request generation (ms)
+            },
+            app: {
+                capacity: 5,            // App server initial capacity
+                speed: 600              // App server initial processing speed (ms)
+            },
+            database: {
+                capacity: 12,           // Database initial capacity
+                speed: 400              // Database initial processing speed (ms)
+            }
+        },
+        
+        // Difficulty progression stages
+        difficulty: {
+            stage1: {
+                level: 1,
+                trafficDelay: 1700,
+                packetsPerWave: 1,
+                message: "Traffic increasing..."
+            },
+            stage2: {
+                level: 2,
+                trafficDelay: 1400,
+                packetsPerWave: 1,
+                message: "Traffic increasing..."
+            },
+            stage3: {
+                level: 3,
+                trafficDelay: 1000,
+                packetsPerWave: 2,
+                message: "⚠ Higher traffic load!"
+            },
+            stage4: {
+                level: 4,
+                trafficDelay: 800,
+                packetsPerWave: 2,
+                message: "Database under pressure..."
+            },
+            stage5: {
+                level: 5,
+                trafficDelay: 600,
+                packetsPerWave: 3,
+                message: "⛔ Heavy load!"
+            },
+            stage6: {
+                level: 6,
+                trafficDelay: 500,
+                packetsPerWave: 3,
+                message: "⛔ Peak load!"
+            },
+            stage7: {
+                level: 7,
+                trafficDelay: 400,
+                packetsPerWave: 4,
+                message: "Maximum load! Consider scaling databases!"
+            }
+        }
     }
 };
 
@@ -131,7 +205,7 @@ export const GameState = {
     /**
      * Player Resources
      */
-    money: 500,                 // Current budget for purchasing upgrades (starts at $500)
+    money: 1500,                 // Current budget for purchasing upgrades (starts at $500)
     
     /**
      * Request Processing Statistics
@@ -185,7 +259,7 @@ export const resetGameState = (level = 1) => {
     console.trace('Call stack:'); // This will show where resetGameState was called from
     
     // Reset player resources to starting values
-    GameState.money = 500;
+    GameState.money = 1500;
     
     // Clear all request processing statistics
     GameState.success = 0;

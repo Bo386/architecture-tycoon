@@ -17,6 +17,7 @@ import { updateUI } from './utils/uiManager.js';
 import { WelcomeScene } from './scenes/WelcomeScene.js';
 import { Level1Scene } from './scenes/Level1Scene.js';
 import { Level2Scene } from './scenes/Level2Scene.js';
+import { Level3Scene } from './scenes/Level3Scene.js';
 
 /**
  * Phaser Game Configuration Object
@@ -45,7 +46,7 @@ const gameConfig = {
      * Scenes are the different "screens" or "levels" of the game
      * First scene in array (WelcomeScene) will be the default starting scene
      */
-    scene: [WelcomeScene, Level1Scene, Level2Scene]
+    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene]
 };
 
 /**
@@ -148,16 +149,19 @@ function setupEventHandlers() {
                 isGameOver: GameState.isGameOver
             });
             
-            // Get references to both level scenes
+            // Get references to all level scenes
             const level1Scene = game.scene.getScene('Level1Scene');
             const level2Scene = game.scene.getScene('Level2Scene');
+            const level3Scene = game.scene.getScene('Level3Scene');
             
             console.log('Level1Scene active?', level1Scene?.sys.settings.active);
             console.log('Level2Scene active?', level2Scene?.sys.settings.active);
+            console.log('Level3Scene active?', level3Scene?.sys.settings.active);
             
             // Determine which scene is currently active
             const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
-                               (level2Scene && level2Scene.sys.settings.active) ? level2Scene : null;
+                               (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
+                               (level3Scene && level3Scene.sys.settings.active) ? level3Scene : null;
             
             console.log('Active scene:', activeScene);
             
@@ -192,15 +196,18 @@ function setupEventHandlers() {
      * This completely resets the scene, clearing all state and UI.
      */
     document.getElementById('btn-reset').addEventListener('click', () => {
-        // Get references to both level scenes
+        // Get references to all level scenes
         const level1Scene = game.scene.getScene('Level1Scene');
         const level2Scene = game.scene.getScene('Level2Scene');
+        const level3Scene = game.scene.getScene('Level3Scene');
         
         // Restart whichever scene is currently active
         if (level1Scene && level1Scene.sys.settings.active) {
             level1Scene.scene.restart();
         } else if (level2Scene && level2Scene.sys.settings.active) {
             level2Scene.scene.restart();
+        } else if (level3Scene && level3Scene.sys.settings.active) {
+            level3Scene.scene.restart();
         }
     });
 
@@ -238,31 +245,37 @@ function setupEventHandlers() {
      * Allows player to retry the same level.
      */
     document.getElementById('btn-modal-retry').addEventListener('click', () => {
-        // Get references to both level scenes
+        // Get references to all level scenes
         const level1Scene = game.scene.getScene('Level1Scene');
         const level2Scene = game.scene.getScene('Level2Scene');
+        const level3Scene = game.scene.getScene('Level3Scene');
         
         // Restart whichever scene is currently active
         if (level1Scene && level1Scene.sys.settings.active) {
             level1Scene.scene.restart();
         } else if (level2Scene && level2Scene.sys.settings.active) {
             level2Scene.scene.restart();
+        } else if (level3Scene && level3Scene.sys.settings.active) {
+            level3Scene.scene.restart();
         }
     });
 
     /**
      * Modal Next Level Button Handler
      * 
-     * Appears in the result modal when Level 1 is successfully completed.
-     * Transitions the player to Level 2.
+     * Appears in the result modal when a level is successfully completed.
+     * Transitions the player to the next level.
      */
     document.getElementById('btn-modal-next').addEventListener('click', () => {
-        // Get reference to Level 1 scene
+        // Get references to all level scenes
         const level1Scene = game.scene.getScene('Level1Scene');
+        const level2Scene = game.scene.getScene('Level2Scene');
         
-        // If Level 1 is currently active, transition to Level 2
+        // Transition to appropriate next level
         if (level1Scene && level1Scene.sys.settings.active) {
             level1Scene.scene.start('Level2Scene');
+        } else if (level2Scene && level2Scene.sys.settings.active) {
+            level2Scene.scene.start('Level3Scene');
         }
     });
 
@@ -273,15 +286,18 @@ function setupEventHandlers() {
      * Useful for development and testing different levels quickly.
      */
     document.getElementById('btn-skip').addEventListener('click', () => {
-        // Get references to both level scenes
+        // Get references to all level scenes
         const level1Scene = game.scene.getScene('Level1Scene');
         const level2Scene = game.scene.getScene('Level2Scene');
+        const level3Scene = game.scene.getScene('Level3Scene');
         
         // Call the skipLevel method on whichever scene is currently active
         if (level1Scene && level1Scene.sys.settings.active) {
             level1Scene.skipLevel();
         } else if (level2Scene && level2Scene.sys.settings.active) {
             level2Scene.skipLevel();
+        } else if (level3Scene && level3Scene.sys.settings.active) {
+            level3Scene.skipLevel();
         }
     });
 
@@ -302,8 +318,10 @@ function setupEventHandlers() {
                 // Stop all other scenes
                 const welcomeScene = game.scene.getScene('WelcomeScene');
                 const level2Scene = game.scene.getScene('Level2Scene');
+                const level3Scene = game.scene.getScene('Level3Scene');
                 if (welcomeScene) game.scene.stop('WelcomeScene');
                 if (level2Scene) game.scene.stop('Level2Scene');
+                if (level3Scene) game.scene.stop('Level3Scene');
                 // Start Level 1
                 game.scene.start('Level1Scene');
                 // Reset dropdown to default
@@ -313,10 +331,25 @@ function setupEventHandlers() {
                 // Stop all other scenes
                 const welcomeScene = game.scene.getScene('WelcomeScene');
                 const level1Scene = game.scene.getScene('Level1Scene');
+                const level3Scene = game.scene.getScene('Level3Scene');
                 if (welcomeScene) game.scene.stop('WelcomeScene');
                 if (level1Scene) game.scene.stop('Level1Scene');
+                if (level3Scene) game.scene.stop('Level3Scene');
                 // Start Level 2
                 game.scene.start('Level2Scene');
+                // Reset dropdown to default
+                setTimeout(() => { levelSelector.value = ''; }, 100);
+            } else if (selectedLevel === '3') {
+                console.log('Switching to Level 3');
+                // Stop all other scenes
+                const welcomeScene = game.scene.getScene('WelcomeScene');
+                const level1Scene = game.scene.getScene('Level1Scene');
+                const level2Scene = game.scene.getScene('Level2Scene');
+                if (welcomeScene) game.scene.stop('WelcomeScene');
+                if (level1Scene) game.scene.stop('Level1Scene');
+                if (level2Scene) game.scene.stop('Level2Scene');
+                // Start Level 3
+                game.scene.start('Level3Scene');
                 // Reset dropdown to default
                 setTimeout(() => { levelSelector.value = ''; }, 100);
             }

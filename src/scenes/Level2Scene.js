@@ -563,10 +563,10 @@ export class Level2Scene extends Phaser.Scene {
         modal.style.display = 'block';
         modal.classList.add('show');
 
-        title.innerText = "Level 2 Skipped - Auto Complete!";
+        title.innerText = "Level 2 Complete!";
         body.innerHTML = `
             <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
-            <p>You successfully handled 300 requests with database integration!</p>
+            <p>You successfully handled ${CONFIG.level2Target} requests with database integration!</p>
             
             <div class="concept-box" style="background: rgba(74, 144, 226, 0.1); border: 1px solid #4a90e2; border-radius: 8px; padding: 15px; margin-top: 15px;">
                 <strong>Architect's Notes: Database Layer</strong><br/>
@@ -584,7 +584,7 @@ export class Level2Scene extends Phaser.Scene {
             </div>
         `;
         
-        // No Level 3 yet, hide next button
-        btnNext.style.display = 'none';
+        // Show next button for Level 3
+        btnNext.style.display = 'inline-block';
     }
 }

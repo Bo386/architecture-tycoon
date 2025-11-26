@@ -50,6 +50,9 @@ export class ServerNode extends Phaser.GameObjects.Container {
         this.localSuccess = 0;      // Successfully processed requests (user nodes only)
         this.localErrors = 0;       // Failed/dropped requests (user nodes only)
         
+        // Database-specific storage (each database tracks its own storage independently)
+        this.databaseStorage = 0;   // Storage for this specific database instance
+        
         // Ensure node is active for packet routing
         // This is required for Phaser's container system to process the node
         this.setActive(true);
@@ -393,15 +396,18 @@ export class ServerNode extends Phaser.GameObjects.Container {
     routePacket(packet) {
         // Database finished processing - send response back to app
         if (this.type === 'database' && !packet.isResponse) {
-            // If this is a write request, increase database storage
+            // If this is a write request, increase THIS database's storage
             if (packet.isWrite) {
+                this.databaseStorage += 1;
+                
+                // Also update global counter for UI display (total across all DBs)
                 GameState.databaseStorage += 1;
                 
-                // Update database processing speed based on storage
+                // Update THIS database's processing speed based on its own storage
                 // As storage grows, operations become slower
                 // Formula: baseSpeed * (1 + storage / 100)
                 // Example: 800ms * (1 + 50/100) = 800ms * 1.5 = 1200ms
-                this.speed = Math.floor(this.baseSpeed * (1 + GameState.databaseStorage / 100));
+                this.speed = Math.floor(this.baseSpeed * (1 + this.databaseStorage / 100));
                 
                 // Update the visual storage fill indicator
                 this.updateStorageFill();
@@ -449,15 +455,24 @@ export class ServerNode extends Phaser.GameObjects.Container {
         }
         // App receives request - route based on architecture
         else if (this.type === 'app' && !packet.isResponse) {
-            const database = GameState.nodes['Database'];
-            console.log('App processing request. Database exists?', database ? 'YES' : 'NO');
+            // Find all available database servers
+            const databases = Object.keys(GameState.nodes)
+                .filter(key => key.startsWith('Database'))
+                .map(key => GameState.nodes[key])
+                .filter(db => db && db.active);
+            
+            console.log('App processing request. Databases found:', databases.length);
             console.log('All nodes:', Object.keys(GameState.nodes));
             
-            if (database) {
-                // Level 2: Microservices architecture - forward to database
-                console.log('Forwarding to database');
+            if (databases.length > 0) {
+                // Level 2/3: Architecture with database(s) - forward to a database
+                // Use round-robin or random selection for load balancing
+                const randomIndex = Math.floor(Math.random() * databases.length);
+                const selectedDatabase = databases[randomIndex];
+                
+                console.log('Forwarding to database:', selectedDatabase.name);
                 packet.appNode = this; // Store reference for return path
-                sendPacketAnim(this.scene, packet, database, this);
+                sendPacketAnim(this.scene, packet, selectedDatabase, this);
             } else {
                 // Level 1: Monolithic architecture - no database, respond directly
                 console.log('No database, sending response back');
@@ -634,15 +649,15 @@ export class ServerNode extends Phaser.GameObjects.Container {
             return;
         }
 
-        // Update the storage text display
-        this.storageText.setText('Data: ' + GameState.databaseStorage);
+        // Update the storage text display with THIS database's storage
+        this.storageText.setText('Data: ' + this.databaseStorage);
         
         // Change color based on storage amount for visual feedback
-        if (GameState.databaseStorage < 20) {
+        if (this.databaseStorage < 20) {
             this.storageText.setColor('#00ff00');  // Green - low storage
-        } else if (GameState.databaseStorage < 50) {
+        } else if (this.databaseStorage < 50) {
             this.storageText.setColor('#ffff00');  // Yellow - medium storage
-        } else if (GameState.databaseStorage < 80) {
+        } else if (this.databaseStorage < 80) {
             this.storageText.setColor('#ff6b35');  // Orange - high storage
         } else {
             this.storageText.setColor('#ff0000');  // Red - very high storage
@@ -651,7 +666,7 @@ export class ServerNode extends Phaser.GameObjects.Container {
         // Update the visual fill indicator
         // Max storage is 100 for visual purposes
         const maxStorage = 100;
-        const fillRatio = Math.min(GameState.databaseStorage / maxStorage, 1);
+        const fillRatio = Math.min(this.databaseStorage / maxStorage, 1);
         const maxHeight = this.bg.height;
         const newHeight = Math.max(5, maxHeight * fillRatio); // Minimum 5px height
         
