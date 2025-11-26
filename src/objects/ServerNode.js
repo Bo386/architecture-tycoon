@@ -495,8 +495,16 @@ export class ServerNode extends Phaser.GameObjects.Container {
         }
         // User sends request to app
         else if (this.type === 'user' && !packet.isResponse) {
-            const target = GameState.nodes['App'];
-            if (target) {
+            // Find all available app servers
+            const appServers = Object.keys(GameState.nodes)
+                .filter(key => key.startsWith('App'))
+                .map(key => GameState.nodes[key])
+                .filter(app => app && app.active);
+            
+            if (appServers.length > 0) {
+                // Use round-robin or random selection for load balancing
+                const randomIndex = Math.floor(Math.random() * appServers.length);
+                const target = appServers[randomIndex];
                 sendPacketAnim(this.scene, packet, target, this);
             }
         }
