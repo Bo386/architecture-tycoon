@@ -266,7 +266,87 @@ export const CONFIG = {
         }
     },
     
-    level4Target: 1200          // Level 4: Higher target to test app server scaling
+    level4Target: 1200,         // Level 4: Higher target to test app server scaling
+    
+    /**
+     * Level 5 Configuration
+     * Introduces caching layer between app and database servers
+     */
+    level5: {
+        // Initial traffic generation settings
+        initialTrafficDelay: 2000,      // Initial delay between traffic waves (ms)
+        initialPacketsPerWave: 1,       // Starting number of packets per wave
+        difficultyInterval: 10000,      // Time between difficulty increases (ms)
+        
+        // Server node configurations
+        servers: {
+            user: {
+                capacity: 999,          // User nodes have unlimited capacity
+                speed: 10               // Instant request generation (ms)
+            },
+            app: {
+                capacity: 5,            // App server initial capacity
+                speed: 600              // App server initial processing speed (ms)
+            },
+            cache: {
+                capacity: 15,           // Cache initial capacity (higher than app/db)
+                speed: 10,              // Cache is extremely fast (10ms) - 40x faster than database!
+                hitRate: 0.7            // 70% cache hit rate for read requests
+            },
+            database: {
+                capacity: 12,           // Database initial capacity
+                speed: 400              // Database initial processing speed (ms)
+            }
+        },
+        
+        // Difficulty progression stages
+        difficulty: {
+            stage1: {
+                level: 1,
+                trafficDelay: 1700,
+                packetsPerWave: 1,
+                message: "Traffic increasing..."
+            },
+            stage2: {
+                level: 2,
+                trafficDelay: 1400,
+                packetsPerWave: 2,
+                message: "Traffic increasing..."
+            },
+            stage3: {
+                level: 3,
+                trafficDelay: 1000,
+                packetsPerWave: 2,
+                message: "⚠ Higher traffic load!"
+            },
+            stage4: {
+                level: 4,
+                trafficDelay: 800,
+                packetsPerWave: 3,
+                message: "Cache under pressure..."
+            },
+            stage5: {
+                level: 5,
+                trafficDelay: 600,
+                packetsPerWave: 3,
+                message: "⛔ Heavy load!"
+            },
+            stage6: {
+                level: 6,
+                trafficDelay: 500,
+                packetsPerWave: 4,
+                message: "⛔ Peak load!"
+            },
+            stage7: {
+                level: 7,
+                trafficDelay: 400,
+                packetsPerWave: 5,
+                message: "Maximum load! Cache is critical!"
+            }
+        }
+    },
+    
+    level5Target: 1200          // Level 5: Same as Level 4 but testing cache effectiveness
 };
 
 /**

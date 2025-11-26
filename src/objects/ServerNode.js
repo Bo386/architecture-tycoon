@@ -385,17 +385,60 @@ export class ServerNode extends Phaser.GameObjects.Container {
      * - Current node type
      * - Whether packet is a request or response
      * - Whether it's a read or write request
-     * - Architecture configuration (Level 1 vs Level 2)
+     * - Architecture configuration (Level 1 vs Level 2+)
      * 
      * Packet flow:
      * - Level 1: User → App → User
-     * - Level 2: User → App → Database → App → User
+     * - Level 2-4: User → App → Database → App → User
+     * - Level 5: User → App → Cache → [Database if miss] → Cache → App → User
      * 
      * @param {Phaser.GameObjects.Arc} packet - The packet to route
      */
     routePacket(packet) {
+        // Cache receives read request from app - check for hit/miss
+        if (this.type === 'cache' && !packet.isResponse) {
+            const cacheConfig = CONFIG.level5?.servers?.cache;
+            const hitRate = cacheConfig?.hitRate || 0.7;
+            const isCacheHit = Math.random() < hitRate;
+            
+            if (isCacheHit) {
+                // Cache HIT - return directly to app
+                packet.isResponse = true;
+                packet.isCacheHit = true;
+                
+                // Change packet color to response (gold)
+                if (packet.setFillStyle) {
+                    packet.setFillStyle(CONFIG.colors.packetRes);
+                } else if (packet.setTint) {
+                    packet.setTint(CONFIG.colors.packetRes);
+                }
+                
+                // Show cache hit feedback
+                this.showFloatText('HIT', '#00ff00');
+                
+                // Return to app
+                if (packet.appNode && packet.appNode.active) {
+                    sendPacketAnim(this.scene, packet, packet.appNode, this);
+                } else {
+                    packet.destroy();
+                }
+            } else {
+                // Cache MISS - return to app so it can go to DB
+                packet.cacheMissed = true; // Mark as cache miss
+                
+                // Show cache miss feedback
+                this.showFloatText('MISS', '#ff6b35');
+                
+                // Return to app
+                if (packet.appNode && packet.appNode.active) {
+                    sendPacketAnim(this.scene, packet, packet.appNode, this);
+                } else {
+                    packet.destroy();
+                }
+            }
+        }
         // Database finished processing - send response back to app
-        if (this.type === 'database' && !packet.isResponse) {
+        else if (this.type === 'database' && !packet.isResponse) {
             // If this is a write request, increase THIS database's storage
             if (packet.isWrite) {
                 this.databaseStorage += 1;
@@ -438,7 +481,7 @@ export class ServerNode extends Phaser.GameObjects.Container {
                 packet.setTint(CONFIG.colors.packetRes); // Sprite packets
             }
             
-            // Send back to the app that forwarded this request
+            // Always send back to the app that forwarded this request
             if (packet.appNode && packet.appNode.active) {
                 sendPacketAnim(this.scene, packet, packet.appNode, this);
             } else {
@@ -455,41 +498,85 @@ export class ServerNode extends Phaser.GameObjects.Container {
         }
         // App receives request - route based on architecture
         else if (this.type === 'app' && !packet.isResponse) {
-            // Find all available database servers
-            const databases = Object.keys(GameState.nodes)
-                .filter(key => key.startsWith('Database'))
-                .map(key => GameState.nodes[key])
-                .filter(db => db && db.active);
-            
-            console.log('App processing request. Databases found:', databases.length);
-            console.log('All nodes:', Object.keys(GameState.nodes));
-            
-            if (databases.length > 0) {
-                // Level 2/3: Architecture with database(s) - forward to a database
-                // Use round-robin or random selection for load balancing
-                const randomIndex = Math.floor(Math.random() * databases.length);
-                const selectedDatabase = databases[randomIndex];
+            // Check if this is a cache miss returning to app
+            if (packet.cacheMissed) {
+                // Cache missed, now go to database
+                packet.cacheMissed = false; // Clear the flag
+                const databases = Object.keys(GameState.nodes)
+                    .filter(key => key.startsWith('Database'))
+                    .map(key => GameState.nodes[key])
+                    .filter(db => db && db.active);
                 
-                console.log('Forwarding to database:', selectedDatabase.name);
-                packet.appNode = this; // Store reference for return path
-                sendPacketAnim(this.scene, packet, selectedDatabase, this);
-            } else {
-                // Level 1: Monolithic architecture - no database, respond directly
-                console.log('No database, sending response back');
-                packet.isResponse = true;
-                
-                // Change packet color to response (gold)
-                // Handle both circle packets (setFillStyle) and sprite packets (setTint)
-                if (packet.setFillStyle) {
-                    packet.setFillStyle(CONFIG.colors.packetRes); // Circle packets
-                } else if (packet.setTint) {
-                    packet.setTint(CONFIG.colors.packetRes); // Sprite packets (diamonds)
-                }
-                
-                if (packet.sourceNode && packet.sourceNode.active) {
-                    sendPacketAnim(this.scene, packet, packet.sourceNode, this);
+                if (databases.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * databases.length);
+                    const selectedDatabase = databases[randomIndex];
+                    packet.appNode = this; // Store reference for return path
+                    sendPacketAnim(this.scene, packet, selectedDatabase, this);
                 } else {
-                    packet.destroy(); // Source user no longer exists
+                    packet.destroy();
+                }
+            } else {
+                // New request from user
+                const cache = GameState.nodes['Cache1'];
+                
+                // Write requests always go directly to database (skip cache)
+                if (packet.isWrite) {
+                    const databases = Object.keys(GameState.nodes)
+                        .filter(key => key.startsWith('Database'))
+                        .map(key => GameState.nodes[key])
+                        .filter(db => db && db.active);
+                    
+                    if (databases.length > 0) {
+                        const randomIndex = Math.floor(Math.random() * databases.length);
+                        const selectedDatabase = databases[randomIndex];
+                        packet.appNode = this; // Store reference for return path
+                        sendPacketAnim(this.scene, packet, selectedDatabase, this);
+                    } else {
+                        packet.destroy();
+                    }
+                }
+                // Read requests go through cache if available (Level 5)
+                else if (cache && cache.active) {
+                    packet.appNode = this; // Store reference for return path
+                    sendPacketAnim(this.scene, packet, cache, this);
+                } else {
+                    // Find all available database servers
+                    const databases = Object.keys(GameState.nodes)
+                        .filter(key => key.startsWith('Database'))
+                        .map(key => GameState.nodes[key])
+                        .filter(db => db && db.active);
+                    
+                    console.log('App processing request. Databases found:', databases.length);
+                    console.log('All nodes:', Object.keys(GameState.nodes));
+                    
+                    if (databases.length > 0) {
+                        // Level 2/3/4: Architecture with database(s) - forward to a database
+                        // Use round-robin or random selection for load balancing
+                        const randomIndex = Math.floor(Math.random() * databases.length);
+                        const selectedDatabase = databases[randomIndex];
+                        
+                        console.log('Forwarding to database:', selectedDatabase.name);
+                        packet.appNode = this; // Store reference for return path
+                        sendPacketAnim(this.scene, packet, selectedDatabase, this);
+                    } else {
+                        // Level 1: Monolithic architecture - no database, respond directly
+                        console.log('No database, sending response back');
+                        packet.isResponse = true;
+                        
+                        // Change packet color to response (gold)
+                        // Handle both circle packets (setFillStyle) and sprite packets (setTint)
+                        if (packet.setFillStyle) {
+                            packet.setFillStyle(CONFIG.colors.packetRes); // Circle packets
+                        } else if (packet.setTint) {
+                            packet.setTint(CONFIG.colors.packetRes); // Sprite packets (diamonds)
+                        }
+                        
+                        if (packet.sourceNode && packet.sourceNode.active) {
+                            sendPacketAnim(this.scene, packet, packet.sourceNode, this);
+                        } else {
+                            packet.destroy(); // Source user no longer exists
+                        }
+                    }
                 }
             }
         }
