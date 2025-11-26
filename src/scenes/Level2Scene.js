@@ -117,6 +117,12 @@ export class Level2Scene extends Phaser.Scene {
         const h = this.cameras.main.height;
 
         /**
+         * Set Camera Background Color
+         * Set the scene background to light gray instead of black
+         */
+        this.cameras.main.setBackgroundColor('#2a2a2a');
+
+        /**
          * Add Grid Background
          * Creates a subtle grid pattern for visual context
          */
@@ -124,10 +130,10 @@ export class Level2Scene extends Phaser.Scene {
             w/2, h/2,           // Center position
             w, h,               // Full width and height
             40, 40,             // Grid cell size (40x40 pixels)
-            0x000000,           // Grid fill color (black, invisible)
+            0x2a2a2a,           // Grid fill color (light gray to match background)
             0,                  // Fill alpha (0 = fully transparent)
-            0x333333,           // Grid line color (dark gray)
-            0.2                 // Line alpha (20% opacity for subtle effect)
+            0x444444,           // Grid line color (medium gray, visible on light gray)
+            0.3                 // Line alpha (30% opacity for subtle effect)
         );
         
         /**
@@ -437,27 +443,26 @@ export class Level2Scene extends Phaser.Scene {
             /**
              * Create Write Request Packet (Diamond Shape)
              * Write requests are represented by cyan diamond shapes
-             * Use Phaser's Polygon to create a proper diamond
-             * Same color as read requests to maintain consistency
+             * Use Graphics to draw the diamond for precise center control
              */
             const size = 6; // Half-size of diamond
             
-            // Create diamond as a Phaser Polygon object
-            // Points: top, right, bottom, left (clockwise from top)
-            const points = [
-                0, -size,      // Top point
-                size, 0,       // Right point
-                0, size,       // Bottom point
-                -size, 0       // Left point
-            ];
+            // Create a graphics object and draw the diamond
+            packet = this.add.graphics();
+            packet.fillStyle(CONFIG.colors.packetReq, 1);
             
-            // Create polygon with cyan color
-            packet = this.add.polygon(
-                startNode.x, 
-                startNode.y, 
-                points, 
-                CONFIG.colors.packetReq  // Cyan color
-            );
+            // Draw diamond path centered at (0,0)
+            packet.beginPath();
+            packet.moveTo(0, -size);    // Top point
+            packet.lineTo(size, 0);     // Right point
+            packet.lineTo(0, size);     // Bottom point
+            packet.lineTo(-size, 0);    // Left point
+            packet.closePath();
+            packet.fillPath();
+            
+            // Set position - the graphics origin is already at center (0,0)
+            packet.x = startNode.x;
+            packet.y = startNode.y;
             
             packet.isWrite = true; // Mark as write request
         } else {
@@ -515,8 +520,8 @@ export class Level2Scene extends Phaser.Scene {
          * - 100 requests processed (Level 2 target)
          * - 100% success rate (0 errors)
          */
-        GameState.total = 100;              // Level 2 only requires 100 requests
-        GameState.success = 100;
+        GameState.total = 300;              // Level 2 only requires 100 requests
+        GameState.success = 300;
         GameState.errors = 0;
         GameState.isRunning = false;
         GameState.isGameOver = true;

@@ -95,6 +95,12 @@ export class Level1Scene extends Phaser.Scene {
         const h = this.cameras.main.height;
 
         /**
+         * Set Camera Background Color
+         * Set the scene background to light gray instead of black
+         */
+        this.cameras.main.setBackgroundColor('#2a2a2a');
+
+        /**
          * Add Grid Background
          * Creates a subtle grid pattern to provide visual context
          * and help players see the spatial relationships between nodes
@@ -103,10 +109,10 @@ export class Level1Scene extends Phaser.Scene {
             w/2, h/2,           // Center position
             w, h,               // Full width and height
             40, 40,             // Grid cell size (40x40 pixels)
-            0x000000,           // Grid fill color (black, invisible)
+            0x2a2a2a,           // Grid fill color (light gray to match background)
             0,                  // Fill alpha (0 = fully transparent)
-            0x333333,           // Grid line color (dark gray)
-            0.2                 // Line alpha (20% opacity for subtle effect)
+            0x444444,           // Grid line color (medium gray, visible on light gray)
+            0.3                 // Line alpha (30% opacity for subtle effect)
         );
         
         /**

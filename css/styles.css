@@ -188,7 +188,7 @@ body {
     align-items: center; /* Center content vertically */
     justify-content: center; /* Center content horizontally */
     padding: 0;
-    background: #000000; /* Black background for game canvas */
+    background: #2a2a2a; /* Light gray background for game canvas */
     min-height: 0; /* Allow flex children to shrink */
     overflow: hidden; /* Prevent overflow */
 }

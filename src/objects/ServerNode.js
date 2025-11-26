@@ -80,6 +80,27 @@ export class ServerNode extends Phaser.GameObjects.Container {
         this.bg = this.scene.add.rectangle(0, 0, w, h, CONFIG.colors.node);
         this.bg.setStrokeStyle(2, CONFIG.colors.nodeBorder);
         
+        // Database-specific: Storage display
+        if (this.type === 'database') {
+            // Create visual fill indicator (cyan rectangle that grows from bottom upward)
+            // Strategy: Set origin at TOP of rectangle, position it at bottom of node
+            // As height increases, the top stays fixed and bottom extends downward
+            // But we want it to grow upward, so we need to adjust Y as height changes
+            this.storageFill = this.scene.add.rectangle(0, h/2 - 5, w, 5, 0x00ffff, 0.5);
+            this.storageFill.setOrigin(0.5, 0); // Anchor at TOP center
+            
+            // Create text display showing current storage amount (positioned to the right)
+            this.storageText = this.scene.add.text(w/2 + 15, 0, 'Data: 0', {
+                fontSize: '14px',
+                color: '#00ff00',  // Green color for visibility
+                fontStyle: 'bold',
+                backgroundColor: '#000000',  // Black background
+                padding: { x: 4, y: 2 }
+            }).setOrigin(0, 0.5);
+            
+            console.log('Created storage fill and text for database:', this.name);
+        }
+        
         // Name label positioned above the node
         this.textName = this.scene.add.text(0, -h/2 - 15, this.name, { 
             fontSize: '14px', 
@@ -99,7 +120,11 @@ export class ServerNode extends Phaser.GameObjects.Container {
         this.processIndicator.setVisible(false); // Hidden until processing starts
 
         // Add all common visual elements to this container
-        this.add([this.bg, this.textName, this.barBg, this.barFg, this.processIndicator]);
+        if (this.type === 'database') {
+            this.add([this.bg, this.storageFill, this.textName, this.barBg, this.barFg, this.processIndicator, this.storageText]);
+        } else {
+            this.add([this.bg, this.textName, this.barBg, this.barFg, this.processIndicator]);
+        }
 
         // Add type-specific UI elements
         if (this.type === 'user') {
@@ -364,6 +389,9 @@ export class ServerNode extends Phaser.GameObjects.Container {
                 // Example: 800ms * (1 + 50/100) = 800ms * 1.5 = 1200ms
                 this.speed = Math.floor(this.baseSpeed * (1 + GameState.databaseStorage / 100));
                 
+                // Update the visual storage fill indicator
+                this.updateStorageFill();
+                
                 // Show visual feedback for write operation
                 this.showFloatText('+1 Data', '#ff6b35');
             }
@@ -371,11 +399,21 @@ export class ServerNode extends Phaser.GameObjects.Container {
             packet.isResponse = true;
             
             // Change packet color to response (gold)
-            // Handle different packet types: circles, sprites, and polygons
+            // Handle different packet types: circles, graphics (diamonds), and sprites
             if (packet.setFillStyle) {
                 packet.setFillStyle(CONFIG.colors.packetRes); // Circle packets
-            } else if (packet.fillColor !== undefined) {
-                packet.fillColor = CONFIG.colors.packetRes; // Polygon packets (diamonds)
+            } else if (packet.clear) {
+                // Graphics packets (diamonds) - need to redraw with new color
+                packet.clear();
+                packet.fillStyle(CONFIG.colors.packetRes, 1);
+                const size = 6;
+                packet.beginPath();
+                packet.moveTo(0, -size);
+                packet.lineTo(size, 0);
+                packet.lineTo(0, size);
+                packet.lineTo(-size, 0);
+                packet.closePath();
+                packet.fillPath();
             } else if (packet.setTint) {
                 packet.setTint(CONFIG.colors.packetRes); // Sprite packets
             }
@@ -547,5 +585,59 @@ export class ServerNode extends Phaser.GameObjects.Container {
         if (ratio < 0.5) return 0x00ff00;  // Green - plenty of capacity
         if (ratio < 0.9) return 0xffff00;  // Yellow - getting busy
         return 0xff0000;                    // Red - near/at capacity
+    }
+
+    /**
+     * Update Storage Fill (Database Only)
+     * 
+     * Updates the cyan fill indicator to show current database storage.
+     * The fill grows from bottom to top as data is added.
+     * Uses smooth animation for a pleasing visual effect.
+     * 
+     * Max storage is assumed to be 100 items for visual purposes.
+     */
+    updateStorageFill() {
+        // Only apply to database nodes
+        if (this.type !== 'database' || !this.storageText) {
+            return;
+        }
+
+        // Update the storage text display
+        this.storageText.setText('Data: ' + GameState.databaseStorage);
+        
+        // Change color based on storage amount for visual feedback
+        if (GameState.databaseStorage < 20) {
+            this.storageText.setColor('#00ff00');  // Green - low storage
+        } else if (GameState.databaseStorage < 50) {
+            this.storageText.setColor('#ffff00');  // Yellow - medium storage
+        } else if (GameState.databaseStorage < 80) {
+            this.storageText.setColor('#ff6b35');  // Orange - high storage
+        } else {
+            this.storageText.setColor('#ff0000');  // Red - very high storage
+        }
+        
+        // Update the visual fill indicator
+        // Max storage is 100 for visual purposes
+        const maxStorage = 100;
+        const fillRatio = Math.min(GameState.databaseStorage / maxStorage, 1);
+        const maxHeight = this.bg.height;
+        const newHeight = Math.max(5, maxHeight * fillRatio); // Minimum 5px height
+        
+        // Calculate new Y position
+        // Origin is at top (0, 0), so Y represents the top of the rectangle
+        // To grow upward from bottom: Y = (bottom position) - (new height)
+        // Bottom of node is at h/2, so: Y = h/2 - newHeight
+        const newY = (this.bg.height / 2) - newHeight;
+        
+        // Animate both height and Y position smoothly
+        // As height increases, Y moves upward (becomes more negative)
+        // This makes the rectangle grow from bottom to top
+        this.scene.tweens.add({
+            targets: this.storageFill,
+            height: newHeight,
+            y: newY,
+            duration: 300,
+            ease: 'Power2'
+        });
     }
 }

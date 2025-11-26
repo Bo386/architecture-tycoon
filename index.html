@@ -13,7 +13,25 @@
 <body>
     <!-- Top Header Section: Displays level title and legend for visual elements -->
     <div id="header">
-        <h1>Level 1: Monolithic Architecture Scaling</h1>
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <h1>Level 1: Monolithic Architecture Scaling</h1>
+            <!-- Level Selection Dropdown -->
+            <select id="level-selector" style="
+                background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+                color: white;
+                padding: 8px 16px;
+                font-size: 14px;
+                border: 2px solid #5aa3ff;
+                border-radius: 6px;
+                cursor: pointer;
+                box-shadow: 0 3px 8px rgba(74, 144, 226, 0.4);
+                font-weight: 600;
+            ">
+                <option value="" style="background-color: #2a2a2a; color: white;">📋 Select Level</option>
+                <option value="1" style="background-color: #2a2a2a; color: white;">Level 1: Monolithic Architecture</option>
+                <option value="2" style="background-color: #2a2a2a; color: white;">Level 2: Database Integration</option>
+            </select>
+        </div>
         <!-- Legend box: Explains the meaning of colored dots/elements in the game -->
         <div class="legend-box">
             <!-- Cyan circle represents read requests -->

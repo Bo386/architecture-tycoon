@@ -29,7 +29,7 @@ const gameConfig = {
     parent: 'game-container',       // DOM element ID where the canvas will be injected
     width: window.innerWidth,       // Initial canvas width (full window width)
     height: window.innerHeight,     // Initial canvas height (full window height)
-    backgroundColor: '#000000',     // Black background color for the canvas
+    backgroundColor: '#2a2a2a',     // Light gray background color for the canvas
     
     /**
      * Scale Manager Configuration
@@ -78,7 +78,10 @@ window.addEventListener('resize', () => {
  * Fires when the HTML document has been completely loaded and parsed.
  * This ensures all DOM elements exist before we try to attach event listeners.
  */
+console.log('Script loaded, waiting for DOM...');
+
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM Content Loaded - setting up event handlers');
     // Set up all button event handlers
     setupEventHandlers();
     
@@ -96,6 +99,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 100); // 100ms delay
 });
+
+// Also try to set up immediately in case DOM is already loaded
+if (document.readyState === 'loading') {
+    console.log('Document still loading...');
+} else {
+    console.log('Document already loaded, setting up handlers immediately');
+    setupEventHandlers();
+}
 
 /**
  * Setup Event Handlers for UI Controls
@@ -222,4 +233,45 @@ function setupEventHandlers() {
             level2Scene.skipLevel();
         }
     });
+
+    /**
+     * Level Selection Dropdown Handler
+     * 
+     * Allows player to switch between different levels using a dropdown menu.
+     * Listens for changes to the select element.
+     */
+    const levelSelector = document.getElementById('level-selector');
+    if (levelSelector) {
+        levelSelector.addEventListener('change', (event) => {
+            const selectedLevel = event.target.value;
+            console.log('Level selected:', selectedLevel);
+            
+            if (selectedLevel === '1') {
+                console.log('Switching to Level 1');
+                // Stop all other scenes
+                const welcomeScene = game.scene.getScene('WelcomeScene');
+                const level2Scene = game.scene.getScene('Level2Scene');
+                if (welcomeScene) game.scene.stop('WelcomeScene');
+                if (level2Scene) game.scene.stop('Level2Scene');
+                // Start Level 1
+                game.scene.start('Level1Scene');
+                // Reset dropdown to default
+                setTimeout(() => { levelSelector.value = ''; }, 100);
+            } else if (selectedLevel === '2') {
+                console.log('Switching to Level 2');
+                // Stop all other scenes
+                const welcomeScene = game.scene.getScene('WelcomeScene');
+                const level1Scene = game.scene.getScene('Level1Scene');
+                if (welcomeScene) game.scene.stop('WelcomeScene');
+                if (level1Scene) game.scene.stop('Level1Scene');
+                // Start Level 2
+                game.scene.start('Level2Scene');
+                // Reset dropdown to default
+                setTimeout(() => { levelSelector.value = ''; }, 100);
+            }
+        });
+        console.log('Level selector event listener attached');
+    } else {
+        console.error('Level selector element not found!');
+    }
 }
