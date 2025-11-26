@@ -240,31 +240,46 @@ function updateUpgradeButton() {
  * Update Start Button State
  * 
  * Updates the start button's enabled state and text based on game status.
- * The button should only be clickable when the game is ready to start.
+ * The button toggles between Start, Pause, and Resume states.
  * 
  * Button states:
  * - "▶ Start" (enabled): Ready to begin simulation
- * - "Running..." (disabled): Simulation in progress
+ * - "⏸ Pause" (enabled): Simulation running, can be paused
+ * - "▶ Resume" (enabled): Simulation paused, can be resumed
  * - "Finished" (disabled): Level completed
  */
 function updateStartButton() {
     const startBtn = document.getElementById('btn-start');
     
-    // Disable button if simulation is running or game is over
-    if (GameState.isRunning || GameState.isGameOver) {
+    console.log('updateStartButton - isRunning:', GameState.isRunning, 'isPaused:', GameState.isPaused, 'isGameOver:', GameState.isGameOver);
+    
+    // Game over - disable button
+    if (GameState.isGameOver) {
         startBtn.disabled = true;
-        startBtn.style.opacity = 0.5; // Visual feedback for disabled state
-        
-        // Show appropriate text based on state
-        startBtn.innerHTML = GameState.isGameOver ? 
-            `<span>Finished</span>` : 
-            `<span>Running...</span>`;
-    } 
-    // Enable button when ready to start
+        startBtn.style.opacity = 0.5;
+        startBtn.innerHTML = `<span>Finished</span>`;
+        startBtn.className = 'start';
+    }
+    // Running and paused - show Resume button
+    else if (GameState.isRunning === true && GameState.isPaused === true) {
+        startBtn.disabled = false;
+        startBtn.style.opacity = 1;
+        startBtn.innerHTML = `<span>▶ Resume</span>`;
+        startBtn.className = 'start'; // Green color
+    }
+    // Running and not paused - show Pause button
+    else if (GameState.isRunning === true && GameState.isPaused === false) {
+        startBtn.disabled = false;
+        startBtn.style.opacity = 1;
+        startBtn.innerHTML = `<span>⏸ Pause</span>`;
+        startBtn.className = 'pause'; // Yellow color
+    }
+    // Not running - show Start button
     else {
         startBtn.disabled = false;
-        startBtn.style.opacity = 1; // Full opacity when enabled
+        startBtn.style.opacity = 1;
         startBtn.innerHTML = `<span>▶ Start</span>`;
+        startBtn.className = 'start'; // Green color
     }
 }
 

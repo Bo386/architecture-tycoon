@@ -80,9 +80,21 @@ window.addEventListener('resize', () => {
  */
 console.log('Script loaded, waiting for DOM...');
 
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM Content Loaded - setting up event handlers');
-    // Set up all button event handlers
+// Track if handlers have been set up to prevent duplicate calls
+let handlersSetup = false;
+
+/**
+ * Initialize Event Handlers
+ * Ensures setupEventHandlers is only called once, regardless of document state
+ */
+function initializeHandlers() {
+    if (handlersSetup) {
+        console.log('Handlers already set up, skipping duplicate initialization');
+        return;
+    }
+    
+    console.log('Setting up event handlers for the first time');
+    handlersSetup = true;
     setupEventHandlers();
     
     /**
@@ -98,14 +110,15 @@ document.addEventListener('DOMContentLoaded', () => {
             game.scale.resize(container.clientWidth, container.clientHeight);
         }
     }, 100); // 100ms delay
-});
+}
 
-// Also try to set up immediately in case DOM is already loaded
+// Set up handlers when DOM is ready
 if (document.readyState === 'loading') {
-    console.log('Document still loading...');
+    console.log('Document still loading, waiting for DOMContentLoaded...');
+    document.addEventListener('DOMContentLoaded', initializeHandlers);
 } else {
     console.log('Document already loaded, setting up handlers immediately');
-    setupEventHandlers();
+    initializeHandlers();
 }
 
 /**
@@ -116,23 +129,61 @@ if (document.readyState === 'loading') {
  */
 function setupEventHandlers() {
     /**
-     * Start Button Handler
+     * Start/Pause/Resume Button Handler
      * 
-     * Initiates the simulation in whichever level is currently active.
-     * The button triggers request generation to begin.
+     * Toggles simulation state based on current status:
+     * - Not running → Start simulation
+     * - Running and not paused → Pause simulation
+     * - Running and paused → Resume simulation
      */
-    document.getElementById('btn-start').addEventListener('click', () => {
-        // Get references to both level scenes
-        const level1Scene = game.scene.getScene('Level1Scene');
-        const level2Scene = game.scene.getScene('Level2Scene');
-        
-        // Check which scene is currently active and start its simulation
-        if (level1Scene && level1Scene.sys.settings.active) {
-            level1Scene.startSimulation();
-        } else if (level2Scene && level2Scene.sys.settings.active) {
-            level2Scene.startSimulation();
-        }
-    });
+    const startBtn = document.getElementById('btn-start');
+    console.log('Attaching click handler to start button:', startBtn);
+    
+    if (startBtn) {
+        startBtn.addEventListener('click', () => {
+            console.log('START BUTTON CLICKED!');
+            console.log('Current GameState:', {
+                isRunning: GameState.isRunning,
+                isPaused: GameState.isPaused,
+                isGameOver: GameState.isGameOver
+            });
+            
+            // Get references to both level scenes
+            const level1Scene = game.scene.getScene('Level1Scene');
+            const level2Scene = game.scene.getScene('Level2Scene');
+            
+            console.log('Level1Scene active?', level1Scene?.sys.settings.active);
+            console.log('Level2Scene active?', level2Scene?.sys.settings.active);
+            
+            // Determine which scene is currently active
+            const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
+                               (level2Scene && level2Scene.sys.settings.active) ? level2Scene : null;
+            
+            console.log('Active scene:', activeScene);
+            
+            if (!activeScene) {
+                console.error('No active scene found!');
+                return; // No active scene, exit
+            }
+            
+            // Handle different states
+            if (!GameState.isRunning) {
+                // Not running → Start simulation
+                console.log('Calling startSimulation()');
+                activeScene.startSimulation();
+            } else if (GameState.isPaused) {
+                // Running but paused → Resume simulation
+                console.log('Calling resumeSimulation()');
+                activeScene.resumeSimulation();
+            } else {
+                // Running and not paused → Pause simulation
+                console.log('Calling pauseSimulation()');
+                activeScene.pauseSimulation();
+            }
+        });
+    } else {
+        console.error('Start button not found!');
+    }
 
     /**
      * Reset Button Handler

@@ -150,6 +150,7 @@ export const GameState = {
      * Simulation State Flags
      */
     isRunning: false,           // Whether the simulation is currently active (requests being generated)
+    isPaused: false,            // Whether the simulation is paused (can be resumed)
     isGameOver: false,          // Whether the level has ended (win or lose)
     
     /**
@@ -180,6 +181,9 @@ export const GameState = {
  *                         This determines which level configuration to use
  */
 export const resetGameState = (level = 1) => {
+    console.log('resetGameState called with level:', level);
+    console.trace('Call stack:'); // This will show where resetGameState was called from
+    
     // Reset player resources to starting values
     GameState.money = 500;
     
@@ -193,6 +197,7 @@ export const resetGameState = (level = 1) => {
     
     // Reset simulation state flags
     GameState.isRunning = false;
+    GameState.isPaused = false;
     GameState.isGameOver = false;
     
     // Reset difficulty to initial level
@@ -203,4 +208,6 @@ export const resetGameState = (level = 1) => {
     
     // Reset database storage (only relevant for Level 2+)
     GameState.databaseStorage = 0;
+    
+    console.log('resetGameState completed - isRunning set to false');
 };

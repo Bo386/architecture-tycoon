@@ -185,13 +185,30 @@ export class Level1Scene extends Phaser.Scene {
      * Called when player clicks the "Start" button.
      */
     startSimulation() {
+        console.log('Level1Scene.startSimulation called');
+        console.log('Before: isRunning=', GameState.isRunning, 'isPaused=', GameState.isPaused, 'isGameOver=', GameState.isGameOver);
+        
         // Prevent starting if already running or game is over
-        if (GameState.isRunning || GameState.isGameOver) return;
+        if (GameState.isRunning || GameState.isGameOver) {
+            console.log('Prevented start - already running or game over');
+            return;
+        }
         
         // Mark simulation as active
         GameState.isRunning = true;
+        GameState.isPaused = false;
+        
+        console.log('After state change: isRunning=', GameState.isRunning, 'isPaused=', GameState.isPaused);
+        
+        // Ensure Phaser's time system is running (not paused)
+        this.time.paused = false;
+        console.log('Phaser time.paused set to:', this.time.paused);
+        
+        // Resume all tweens in case they were paused
+        this.tweens.resumeAll();
         
         // Start generating traffic waves
+        console.log('Calling scheduleNextWave...');
         this.scheduleNextWave();
         
         /**
@@ -206,8 +223,65 @@ export class Level1Scene extends Phaser.Scene {
             callback: () => this.increaseDifficulty(),
             loop: true                              // Repeat indefinitely
         });
+        console.log('Difficulty timer created');
         
         // Update UI to reflect running state
+        console.log('Calling updateUI...');
+        updateUI();
+        console.log('startSimulation completed');
+    }
+
+    /**
+     * Pause Simulation
+     * 
+     * Pauses the simulation by:
+     * 1. Setting paused flag
+     * 2. Pausing Phaser's time system (stops all timers and tweens)
+     * 3. Updating UI to show pause state
+     * 
+     * Called when player clicks the "Pause" button.
+     */
+    pauseSimulation() {
+        // Only pause if running and not already paused
+        if (!GameState.isRunning || GameState.isPaused || GameState.isGameOver) return;
+        
+        // Mark as paused
+        GameState.isPaused = true;
+        
+        // Pause Phaser's clock system - this stops all time.delayedCall and time.addEvent timers
+        this.time.paused = true;
+        
+        // Pause all tweens (packet animations)
+        this.tweens.pauseAll();
+        
+        // Update UI to show paused state
+        updateUI();
+    }
+
+    /**
+     * Resume Simulation
+     * 
+     * Resumes a paused simulation by:
+     * 1. Clearing paused flag
+     * 2. Resuming Phaser's time system
+     * 3. Updating UI to show running state
+     * 
+     * Called when player clicks the "Resume" button.
+     */
+    resumeSimulation() {
+        // Only resume if paused
+        if (!GameState.isRunning || !GameState.isPaused || GameState.isGameOver) return;
+        
+        // Clear paused flag
+        GameState.isPaused = false;
+        
+        // Resume Phaser's clock system - restarts all timers
+        this.time.paused = false;
+        
+        // Resume all tweens (packet animations)
+        this.tweens.resumeAll();
+        
+        // Update UI to show running state
         updateUI();
     }
 

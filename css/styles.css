@@ -290,6 +290,18 @@ button.start:hover {
     box-shadow: 0 6px 16px rgba(45, 160, 66, 0.6); /* Enhanced glow on hover */
 }
 
+/* Pause button (yellow) - pauses the simulation */
+button.pause {
+    background: linear-gradient(135deg, #f39c12 0%, #f1c40f 100%); /* Yellow gradient */
+    color: white;
+    box-shadow: 0 4px 12px rgba(243, 156, 18, 0.4); /* Yellow glow */
+}
+
+button.pause:hover {
+    transform: translateY(-2px); /* Subtle lift on hover */
+    box-shadow: 0 6px 16px rgba(243, 156, 18, 0.6); /* Enhanced glow on hover */
+}
+
 /* Upgrade button (orange) - purchases server upgrades */
 button.upgrade {
     background: linear-gradient(135deg, #d68a00 0%, #ffa500 100%); /* Orange gradient */
