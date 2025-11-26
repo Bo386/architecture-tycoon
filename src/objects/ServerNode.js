@@ -108,12 +108,22 @@ export class ServerNode extends Phaser.GameObjects.Container {
             fontFamily: 'Arial' 
         }).setOrigin(0.5);
         
-        // Load bar background (dark bar showing max capacity)
-        this.barBg = this.scene.add.rectangle(0, h/2 + 10, w, 6, 0x000000).setOrigin(0.5);
-        
-        // Load bar foreground (colored bar showing current load)
-        // Starts at 0 width and grows as load increases
-        this.barFg = this.scene.add.rectangle(-w/2, h/2 + 10, 0, 6, 0x00ff00).setOrigin(0, 0.5);
+        // Load bar and capacity text (only for non-user nodes)
+        if (this.type !== 'user') {
+            // Load bar background (dark bar showing max capacity)
+            this.barBg = this.scene.add.rectangle(0, h/2 + 10, w, 6, 0x000000).setOrigin(0.5);
+            
+            // Load bar foreground (colored bar showing current load)
+            // Starts at 0 width and grows as load increases
+            this.barFg = this.scene.add.rectangle(-w/2, h/2 + 10, 0, 6, 0x00ff00).setOrigin(0, 0.5);
+            
+            // Capacity text (shows current load / max capacity)
+            this.capacityText = this.scene.add.text(0, h/2 + 20, '0/' + this.capacity, {
+                fontSize: '10px',
+                color: '#ffffff',
+                fontFamily: 'Arial'
+            }).setOrigin(0.5, 0);
+        }
         
         // Processing indicator - white circle that pulses during processing
         this.processIndicator = this.scene.add.circle(0, 0, 6, 0xffffff, 1);
@@ -121,9 +131,13 @@ export class ServerNode extends Phaser.GameObjects.Container {
 
         // Add all common visual elements to this container
         if (this.type === 'database') {
-            this.add([this.bg, this.storageFill, this.textName, this.barBg, this.barFg, this.processIndicator, this.storageText]);
+            this.add([this.bg, this.storageFill, this.textName, this.barBg, this.barFg, this.capacityText, this.processIndicator, this.storageText]);
+        } else if (this.type === 'user') {
+            // User nodes don't have capacity bars
+            this.add([this.bg, this.textName, this.processIndicator]);
         } else {
-            this.add([this.bg, this.textName, this.barBg, this.barFg, this.processIndicator]);
+            // App nodes have capacity bars
+            this.add([this.bg, this.textName, this.barBg, this.barFg, this.capacityText, this.processIndicator]);
         }
 
         // Add type-specific UI elements
@@ -558,8 +572,14 @@ export class ServerNode extends Phaser.GameObjects.Container {
      * 
      * Updates the load bar to reflect current capacity usage.
      * Bar width and color change based on load percentage.
+     * Note: User nodes don't have capacity bars.
      */
     updateVisuals() {
+        // Skip updating visuals for user nodes (they don't have capacity bars)
+        if (this.type === 'user') {
+            return;
+        }
+        
         // Calculate load as a ratio (0.0 to 1.0)
         const ratio = Math.min(this.currentLoad / this.capacity, 1);
         
@@ -568,6 +588,18 @@ export class ServerNode extends Phaser.GameObjects.Container {
         
         // Change bar color based on load level
         this.barFg.fillColor = this.getLoadColor(ratio);
+        
+        // Update capacity text to show current load / max capacity
+        this.capacityText.setText(this.currentLoad + '/' + this.capacity);
+        
+        // Also update text color based on load
+        if (ratio < 0.5) {
+            this.capacityText.setColor('#00ff00');  // Green
+        } else if (ratio < 0.9) {
+            this.capacityText.setColor('#ffff00');  // Yellow
+        } else {
+            this.capacityText.setColor('#ff0000');  // Red
+        }
     }
     
     /**
@@ -629,13 +661,24 @@ export class ServerNode extends Phaser.GameObjects.Container {
         // Bottom of node is at h/2, so: Y = h/2 - newHeight
         const newY = (this.bg.height / 2) - newHeight;
         
-        // Animate both height and Y position smoothly
+        // Determine fill color based on storage amount
+        let fillColor = 0x00ffff;  // Cyan - low storage (default)
+        if (fillRatio >= 0.8) {
+            fillColor = 0xff0000;  // Red - very high storage (≥80%)
+        } else if (fillRatio >= 0.5) {
+            fillColor = 0xff6b35;  // Orange - high storage (≥50%)
+        } else if (fillRatio >= 0.2) {
+            fillColor = 0xffff00;  // Yellow - medium storage (≥20%)
+        }
+        
+        // Animate both height, Y position, and fill color smoothly
         // As height increases, Y moves upward (becomes more negative)
         // This makes the rectangle grow from bottom to top
         this.scene.tweens.add({
             targets: this.storageFill,
             height: newHeight,
             y: newY,
+            fillColor: fillColor,
             duration: 300,
             ease: 'Power2'
         });

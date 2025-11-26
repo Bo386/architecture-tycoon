@@ -44,7 +44,7 @@ export const CONFIG = {
      */
     targetTotal: 1000,          // Level 1: Total requests that must be processed to complete
     maxErrorRate: 1.0,          // Maximum acceptable error rate percentage (1% = 1.0)
-    level2Target: 300,          // Level 2: Increased target (requires 300 requests to test database scalability)
+    level2Target: 800,          // Level 2: Increased target (requires 300 requests to test database scalability)
     
     /**
      * Level 2 Configuration
@@ -67,8 +67,8 @@ export const CONFIG = {
                 speed: 600              // App server initial processing speed (ms)
             },
             database: {
-                capacity: 3,            // Database initial capacity (lower than app)
-                speed: 800              // Database initial processing speed (ms)
+                capacity: 12,            // Database initial capacity (doubled from 3 to 6)
+                speed: 400              // Database initial processing speed (doubled - reduced from 800ms to 400ms)
             }
         },
         
