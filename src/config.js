@@ -44,7 +44,80 @@ export const CONFIG = {
      */
     targetTotal: 1000,          // Level 1: Total requests that must be processed to complete
     maxErrorRate: 1.0,          // Maximum acceptable error rate percentage (1% = 1.0)
-    level2Target: 100           // Level 2: Reduced target (only needs 100 requests)
+    level2Target: 300,          // Level 2: Increased target (requires 300 requests to test database scalability)
+    
+    /**
+     * Level 2 Configuration
+     * Server node initial stats and difficulty progression settings
+     */
+    level2: {
+        // Initial traffic generation settings
+        initialTrafficDelay: 2000,      // Initial delay between traffic waves (ms)
+        initialPacketsPerWave: 1,       // Starting number of packets per wave
+        difficultyInterval: 10000,      // Time between difficulty increases (ms)
+        
+        // Server node configurations
+        servers: {
+            user: {
+                capacity: 999,          // User nodes have unlimited capacity
+                speed: 10               // Instant request generation (ms)
+            },
+            app: {
+                capacity: 5,            // App server initial capacity
+                speed: 600              // App server initial processing speed (ms)
+            },
+            database: {
+                capacity: 3,            // Database initial capacity (lower than app)
+                speed: 800              // Database initial processing speed (ms)
+            }
+        },
+        
+        // Difficulty progression stages
+        difficulty: {
+            stage1: {
+                level: 1,
+                trafficDelay: 1700,     // Reduce delay by 300ms
+                packetsPerWave: 1,
+                message: "Traffic increasing..."
+            },
+            stage2: {
+                level: 2,
+                trafficDelay: 1400,     // Continue reducing delay
+                packetsPerWave: 1,
+                message: "Traffic increasing..."
+            },
+            stage3: {
+                level: 3,
+                trafficDelay: 800,      // First spike
+                packetsPerWave: 2,      // Increase to 2 packets per wave
+                message: "⚠ Higher traffic load!"
+            },
+            stage4: {
+                level: 4,
+                trafficDelay: 600,
+                packetsPerWave: 2,
+                message: "Database under pressure..."
+            },
+            stage5: {
+                level: 5,
+                trafficDelay: 600,
+                packetsPerWave: 2,
+                message: "Database under pressure..."
+            },
+            stage6: {
+                level: 6,
+                trafficDelay: 400,      // Peak load
+                packetsPerWave: 3,      // Maximum packets per wave
+                message: "⛔ Peak load! Watch the database!"
+            },
+            stage7: {
+                level: 7,
+                trafficDelay: 400,
+                packetsPerWave: 3,
+                message: "Maximum database load"
+            }
+        }
+    }
 };
 
 /**

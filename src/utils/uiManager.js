@@ -37,7 +37,7 @@ export function updateUI() {
     
     /**
      * Update progress display with level-specific target
-     * Level 1 requires 1000 requests, Level 2 requires 100
+     * Level 1 requires 1000 requests, Level 2 requires 300
      */
     const target = GameState.currentLevel === 2 ? CONFIG.level2Target : CONFIG.targetTotal;
     const statTotalEl = document.getElementById('stat-total');

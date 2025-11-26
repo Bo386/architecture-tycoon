@@ -6,7 +6,7 @@
  * complexity and latency that comes with it.
  * 
  * Level Objectives:
- * - Process 100 requests total (fewer than Level 1 due to complexity)
+ * - Process 300 requests total (more than Level 1 to test database scalability)
  * - Maintain error rate below 1%
  * - Manage the added latency from database operations
  * 
@@ -72,12 +72,13 @@ export class Level2Scene extends Phaser.Scene {
         /**
          * Update Objectives Display
          * Show Level 2-specific objectives in the sidebar
+         * Target value is loaded from CONFIG.level2Target for consistency
          */
         const objectivesList = document.querySelector('.objectives-list');
         if (objectivesList) {
             objectivesList.innerHTML = `
-                <li>Complete 100 requests</li>
-                <li>Maintain error rate < 1%</li>
+                <li>Complete ${CONFIG.level2Target} requests</li>
+                <li>Maintain error rate < ${CONFIG.maxErrorRate}%</li>
                 <li>Database adds processing overhead</li>
             `;
         }
@@ -92,11 +93,12 @@ export class Level2Scene extends Phaser.Scene {
         /**
          * Initialize Scene-Specific State Variables
          * These control the traffic generation and difficulty progression
+         * All initial values are loaded from CONFIG.level2
          */
-        this.trafficTimer = null;           // Timer for generating traffic waves
-        this.difficultyTimer = null;        // Timer for difficulty increases
-        this.currentTrafficDelay = 2000;   // Start slower due to longer request paths
-        this.packetsPerWave = 1;            // Number of packets generated per wave
+        this.trafficTimer = null;                                       // Timer for generating traffic waves
+        this.difficultyTimer = null;                                    // Timer for difficulty increases
+        this.currentTrafficDelay = CONFIG.level2.initialTrafficDelay;  // Initial delay from config
+        this.packetsPerWave = CONFIG.level2.initialPacketsPerWave;     // Initial packets per wave from config
 
         // Update the UI to reflect initial state
         updateUI();
@@ -163,53 +165,49 @@ export class Level2Scene extends Phaser.Scene {
          * Positioned on the left side at 15% of canvas width
          * 
          * Parameters: (scene, x, y, name, type, capacity, speed)
-         * - capacity: 999 (unlimited, users never drop requests)
-         * - speed: 10ms (instant request generation)
+         * All capacity and speed values loaded from CONFIG.level2.servers.user
          */
+        const userConfig = CONFIG.level2.servers.user;
         GameState.nodes['User1'] = new ServerNode(
             this, w * 0.15, h/2 - 100,      // Top user
-            'User A', 'user', 999, 10
+            'User A', 'user', userConfig.capacity, userConfig.speed
         );
         GameState.nodes['User2'] = new ServerNode(
             this, w * 0.15, h/2,            // Middle user
-            'User B', 'user', 999, 10
+            'User B', 'user', userConfig.capacity, userConfig.speed
         );
         GameState.nodes['User3'] = new ServerNode(
             this, w * 0.15, h/2 + 100,      // Bottom user
-            'User C', 'user', 999, 10
+            'User C', 'user', userConfig.capacity, userConfig.speed
         );
         
         /**
          * Create Application Server
          * Positioned in the center at 50% of canvas width
          * 
-         * Initial stats:
-         * - capacity: 5 (can handle 5 concurrent requests)
-         * - speed: 600ms (faster than Level 1, but still a bottleneck)
-         * 
+         * Initial stats loaded from CONFIG.level2.servers.app
          * This server now has to handle both incoming requests
          * and responses from the database.
          */
+        const appConfig = CONFIG.level2.servers.app;
         GameState.nodes['App'] = new ServerNode(
             this, w * 0.5, h/2,
-            'App Server', 'app', 5, 600
+            'App Server', 'app', appConfig.capacity, appConfig.speed
         );
         
         /**
          * Create Database Server
          * Positioned on the right at 80% of canvas width
          * 
-         * Initial stats:
-         * - capacity: 3 (lower than app, often becomes the bottleneck)
-         * - speed: 800ms (slower than app, simulating disk I/O)
-         * 
+         * Initial stats loaded from CONFIG.level2.servers.database
          * This is the new addition in Level 2. The database adds
          * an extra hop in the request path, increasing latency and
          * creating a new potential failure point.
          */
+        const dbConfig = CONFIG.level2.servers.database;
         GameState.nodes['Database'] = new ServerNode(
             this, w * 0.8, h/2,
-            'Database', 'database', 3, 800
+            'Database', 'database', dbConfig.capacity, dbConfig.speed
         );
     }
 
@@ -235,13 +233,13 @@ export class Level2Scene extends Phaser.Scene {
         
         /**
          * Start Difficulty Progression Timer
-         * Every 10 seconds (slower than Level 1's 8 seconds)
+         * Interval loaded from CONFIG.level2.difficultyInterval
          * This gives players more time to observe the database behavior
          */
         this.difficultyTimer = this.time.addEvent({
-            delay: 10000,                           // 10 seconds between increases
+            delay: CONFIG.level2.difficultyInterval,    // Interval from config
             callback: () => this.increaseDifficulty(),
-            loop: true                              // Repeat indefinitely
+            loop: true                                   // Repeat indefinitely
         });
         
         // Update UI to reflect running state
@@ -292,67 +290,29 @@ export class Level2Scene extends Phaser.Scene {
      * - Reducing delay between traffic waves
      * - Increasing packets per wave
      * 
-     * Level 2 difficulty progression is more gradual than Level 1
-     * because the database adds inherent complexity.
-     * 
-     * Difficulty Levels:
-     * 0-2: Gentle warm-up
-     * 3: First spike (2 packets per wave)
-     * 4-5: Sustained pressure
-     * 6+: Peak load (3 packets per wave)
+     * All difficulty stages are configured in CONFIG.level2.difficulty
+     * This makes it easy to tune game balance without changing code.
      */
     increaseDifficulty() {
         // Increment difficulty counter
         GameState.difficultyLevel++;
-        let msg = "";
         
-        /**
-         * Levels 1-2: Gentle Increase
-         * Decrease delay gradually, giving time to learn the database flow
-         */
-        if (GameState.difficultyLevel <= 2) {
-            this.currentTrafficDelay = Math.max(1200, this.currentTrafficDelay - 300);
-            msg = "Traffic increasing...";
-        } 
-        /**
-         * Level 3: First Spike
-         * Increase to 2 packets per wave
-         * Database starts to show strain
-         */
-        else if (GameState.difficultyLevel === 3) {
-            this.currentTrafficDelay = 800;
-            this.packetsPerWave = 2;
-            msg = "⚠ Higher traffic load!";
-        }
-        /**
-         * Levels 4-5: Sustained Pressure
-         * Maintain high load to test database capacity
-         */
-        else if (GameState.difficultyLevel <= 5) {
-            this.currentTrafficDelay = 600;
-            msg = "Database under pressure...";
-        }
-        /**
-         * Level 6+: Peak Load
-         * Maximum difficulty for Level 2
-         * 3 packets per wave, database is likely the bottleneck
-         */
-        else if (GameState.difficultyLevel === 6) {
-            this.currentTrafficDelay = 400;
-            this.packetsPerWave = 3;
-            msg = "⛔ Peak load! Watch the database!";
-        }
-        /**
-         * Level 7+: Sustained Peak
-         * No further increases
-         */
-        else {
-            msg = "Maximum database load";
-            return; // No further difficulty changes
+        // Find the matching difficulty stage from config
+        const stageName = `stage${GameState.difficultyLevel}`;
+        const stage = CONFIG.level2.difficulty[stageName];
+        
+        // If stage doesn't exist in config, no further changes
+        if (!stage) {
+            this.showDifficultyToast("Maximum database load");
+            return;
         }
         
-        // Show toast notification about difficulty change
-        this.showDifficultyToast(msg);
+        // Apply the configured difficulty settings
+        this.currentTrafficDelay = stage.trafficDelay;
+        this.packetsPerWave = stage.packetsPerWave;
+        
+        // Show the configured message
+        this.showDifficultyToast(stage.message);
         
         // Update UI to reflect new difficulty level
         updateUI();
@@ -517,10 +477,10 @@ export class Level2Scene extends Phaser.Scene {
         /**
          * Set Winning Game State
          * Simulate a perfect completion:
-         * - 100 requests processed (Level 2 target)
+         * - 300 requests processed (Level 2 target)
          * - 100% success rate (0 errors)
          */
-        GameState.total = 300;              // Level 2 only requires 100 requests
+        GameState.total = 300;              // Level 2 requires 300 requests
         GameState.success = 300;
         GameState.errors = 0;
         GameState.isRunning = false;
@@ -545,7 +505,7 @@ export class Level2Scene extends Phaser.Scene {
         title.innerText = "Level 2 Skipped - Auto Complete!";
         body.innerHTML = `
             <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
-            <p>You successfully handled 100 requests with database integration!</p>
+            <p>You successfully handled 300 requests with database integration!</p>
             
             <div class="concept-box" style="background: rgba(74, 144, 226, 0.1); border: 1px solid #4a90e2; border-radius: 8px; padding: 15px; margin-top: 15px;">
                 <strong>Architect's Notes: Database Layer</strong><br/>
