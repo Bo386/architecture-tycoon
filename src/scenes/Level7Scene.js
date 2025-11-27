@@ -1,374 +1,120 @@
 /**
  * Level 7 Scene - CDN Introduction
  * 
- * This scene implements the seventh level of the game, which teaches the concept
- * of Content Delivery Network (CDN) by introducing a CDN layer between users and load balancer.
+ * This scene implements the seventh level teaching CDN (Content Delivery Network) concepts.
  * 
  * Level Objectives:
  * - Process 1600 requests total
  * - Maintain error rate below 1%
- * - Learn how CDN reduces load on backend infrastructure
+ * - Learn how CDNs reduce latency for static content
  * 
  * Architecture:
- * - 3 User nodes (generate requests)
- * - 1 CDN Server (optional, can be added by player)
- * - 1 Load Balancer (distribute traffic)
- * - 2 App Servers (process business logic)
- * - 1 Cache Server (cache layer)
- * - 1 Database Server (data storage)
+ * - 3 User nodes
+ * - 1 Load Balancer
+ * - 2 App Servers
+ * - 1 Cache Server
+ * - 1 Database Server
+ * - Optional CDN (can be added by player)
  * 
  * Key Concepts Taught:
- * - CDN reduces latency with edge caching
- * - CDN offloads traffic from backend infrastructure
- * - CDN is especially effective for static content and read requests
+ * - CDNs serve static content from edge locations
+ * - Reduces load on origin servers
+ * - Improves response times for geographically distributed users
  */
 
-import { CONFIG, GameState, resetGameState } from '../config.js';
+import { CONFIG, GameState } from '../config.js';
 import { ServerNode } from '../objects/ServerNode.js';
 import { drawDualLines } from '../utils/animations.js';
-import { updateUI } from '../utils/uiManager.js';
+import { BaseLevelScene } from './BaseLevelScene.js';
 
-export class Level7Scene extends Phaser.Scene {
+export class Level7Scene extends BaseLevelScene {
     constructor() {
-        super({ key: 'Level7Scene' });
+        super({
+            key: 'Level7Scene',
+            levelNumber: 7,
+            targetTotal: CONFIG.level7Target,
+            initialTrafficDelay: 1100,
+            initialPacketsPerWave: 2,
+            difficultyInterval: 7000,
+            userNodeIds: ['User1', 'User2', 'User3'],
+            difficultyStages: {
+                stage1: { trafficDelay: 850, packetsPerWave: 2, message: "Traffic increasing..." },
+                stage2: { trafficDelay: 650, packetsPerWave: 3, message: "Load rising..." },
+                stage3: { trafficDelay: 450, packetsPerWave: 3, message: "⚠ High traffic!" },
+                stage4: { trafficDelay: 320, packetsPerWave: 4, message: "⚠ Consider adding CDN!" },
+                stage5: { trafficDelay: 220, packetsPerWave: 5, message: "⛔ Heavy load!" },
+                stage6: { trafficDelay: 150, packetsPerWave: 6, message: "⛔ Maximum throughput!" }
+            }
+        });
+        this.hasCDN = false;
+        this.cdnButtonBg = null;
+        this.cdnButtonText = null;
     }
 
     create() {
-        // Show Game UI Elements
-        const leftSidebar = document.getElementById('left-sidebar');
-        const controlPanel = document.getElementById('control-panel');
-        if (leftSidebar) leftSidebar.style.display = 'flex';
-        if (controlPanel) controlPanel.style.display = 'flex';
-        
-        document.getElementById('result-modal').style.display = 'none';
-        
-        // Update Header
-        const header = document.querySelector('#header h1');
-        if (header) header.textContent = 'Level 7: CDN Layer';
-        
-        // Update Objectives
-        const objectivesList = document.querySelector('.objectives-list');
-        if (objectivesList) {
-            objectivesList.innerHTML = `
-                <li>Complete ${CONFIG.level7Target} requests</li>
-                <li>Maintain error rate < ${CONFIG.maxErrorRate}%</li>
-                <li>Add a CDN to reduce backend load</li>
-            `;
-        }
-        
-        // Reset Game State
-        resetGameState(7);
-        
-        // Initialize Scene State
-        this.trafficTimer = null;
-        this.difficultyTimer = null;
-        this.currentTrafficDelay = CONFIG.level7.initialTrafficDelay;
-        this.packetsPerWave = CONFIG.level7.initialPacketsPerWave;
-        this.hasCDN = false;
-        this.hasLoadBalancer = true; // Load balancer is already present
-
-        updateUI();
-        this.setupBackground();
-        this.createNodes();
-        this.setupZoom();
-        this.setupCameraDrag();
+        super.create();
         this.setupCDNButton();
-    }
-
-    setupCameraDrag() {
-        this.isDraggingCamera = false;
-        this.dragStartX = 0;
-        this.dragStartY = 0;
-        this.cameraStartX = 0;
-        this.cameraStartY = 0;
-
-        this.input.on('pointerdown', (pointer) => {
-            if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
-                this.startCameraDrag(pointer);
-            } else if (pointer.leftButtonDown() && !pointer.event.target.closest('.server-node')) {
-                const objectsUnderPointer = this.input.hitTestPointer(pointer);
-                if (objectsUnderPointer.length === 0) {
-                    this.startCameraDrag(pointer);
-                }
-            }
-        });
-
-        this.input.on('pointermove', (pointer) => {
-            if (this.isDraggingCamera) {
-                this.updateCameraDrag(pointer);
-            }
-        });
-
-        this.input.on('pointerup', (pointer) => {
-            if (this.isDraggingCamera) {
-                this.endCameraDrag();
-            }
-        });
-
-        this.input.on('pointerout', (pointer) => {
-            if (this.isDraggingCamera) {
-                this.endCameraDrag();
-            }
-        });
-    }
-
-    startCameraDrag(pointer) {
-        this.isDraggingCamera = true;
-        this.dragStartX = pointer.x;
-        this.dragStartY = pointer.y;
-        this.cameraStartX = this.cameras.main.scrollX;
-        this.cameraStartY = this.cameras.main.scrollY;
-        this.input.setDefaultCursor('grabbing');
-    }
-
-    updateCameraDrag(pointer) {
-        const deltaX = pointer.x - this.dragStartX;
-        const deltaY = pointer.y - this.dragStartY;
-        this.cameras.main.scrollX = this.cameraStartX - deltaX / this.currentZoom;
-        this.cameras.main.scrollY = this.cameraStartY - deltaY / this.currentZoom;
-    }
-
-    endCameraDrag() {
-        this.isDraggingCamera = false;
-        this.input.setDefaultCursor('default');
-    }
-
-    setupZoom() {
-        this.cameras.main.setZoom(1);
-        this.currentZoom = 1;
-        this.minZoom = 0.5;
-        this.maxZoom = 2.0;
-
-        this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
-            const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
-            this.adjustZoom(zoomDelta);
-        });
-    }
-
-    adjustZoom(delta) {
-        this.currentZoom += delta;
-        this.currentZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.currentZoom));
-        this.cameras.main.setZoom(this.currentZoom);
-        
-        const zoomDisplay = document.getElementById('zoom-level');
-        if (zoomDisplay) {
-            zoomDisplay.textContent = Math.round(this.currentZoom * 100) + '%';
-        }
-    }
-
-    resetZoom() {
-        this.currentZoom = 1;
-        this.cameras.main.setZoom(1);
-        
-        const zoomDisplay = document.getElementById('zoom-level');
-        if (zoomDisplay) {
-            zoomDisplay.textContent = '100%';
-        }
-    }
-
-    setupBackground() {
-        const w = this.cameras.main.width;
-        const h = this.cameras.main.height;
-
-        this.cameras.main.setBackgroundColor('#2a2a2a');
-        const gridSize = 6;
-        this.add.grid(0, 0, w * gridSize, h * gridSize, 40, 40, 0x2a2a2a, 0, 0x444444, 0.3).setOrigin(0.5, 0.5);
-        this.graphics = this.add.graphics();
     }
 
     createNodes() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
 
-        // Create User Nodes (left side)
-        const userConfig = CONFIG.level7.servers.user;
-        GameState.nodes['User1'] = new ServerNode(
-            this, w * 0.15, h/2 - 100,
-            'User A', 'user', userConfig.capacity, userConfig.speed
-        );
-        GameState.nodes['User2'] = new ServerNode(
-            this, w * 0.15, h/2,
-            'User B', 'user', userConfig.capacity, userConfig.speed
-        );
-        GameState.nodes['User3'] = new ServerNode(
-            this, w * 0.15, h/2 + 100,
-            'User C', 'user', userConfig.capacity, userConfig.speed
-        );
-        
-        // Create Load Balancer (already present)
-        const lbConfig = CONFIG.level7.servers.loadbalancer;
-        GameState.nodes['LoadBalancer1'] = new ServerNode(
-            this, w * 0.33, h/2,
-            'Load Balancer', 'loadbalancer', lbConfig.capacity, lbConfig.speed
-        );
-        
-        // Create 2 Application Servers (center-left, stacked vertically)
-        const appConfig = CONFIG.level7.servers.app;
-        GameState.nodes['App1'] = new ServerNode(
-            this, w * 0.50, h/2 - 60,
-            'App Server 1', 'app', appConfig.capacity, appConfig.speed
-        );
-        GameState.nodes['App2'] = new ServerNode(
-            this, w * 0.50, h/2 + 60,
-            'App Server 2', 'app', appConfig.capacity, appConfig.speed
-        );
-        
-        // Create Cache Server (above app servers)
-        const cacheConfig = CONFIG.level7.servers.cache;
-        GameState.nodes['Cache1'] = new ServerNode(
-            this, w * 0.70, h/2 - 180,
-            'Cache', 'cache', cacheConfig.capacity, cacheConfig.speed
-        );
-        
-        // Create Database Server (right side)
-        const dbConfig = CONFIG.level7.servers.database;
-        GameState.nodes['Database1'] = new ServerNode(
-            this, w * 0.70, h/2,
-            'Database', 'database', dbConfig.capacity, dbConfig.speed
-        );
+        GameState.nodes['User1'] = new ServerNode(this, w * 0.15, h/2 - 100, 'User A', 'user', 999, 10);
+        GameState.nodes['User2'] = new ServerNode(this, w * 0.15, h/2, 'User B', 'user', 999, 10);
+        GameState.nodes['User3'] = new ServerNode(this, w * 0.15, h/2 + 100, 'User C', 'user', 999, 10);
+        GameState.nodes['LoadBalancer1'] = new ServerNode(this, w * 0.30, h/2, 'Load Balancer', 'loadbalancer', 30, 100);
+        GameState.nodes['App1'] = new ServerNode(this, w * 0.45, h/2 - 60, 'App Server 1', 'app', 5, 800);
+        GameState.nodes['App2'] = new ServerNode(this, w * 0.45, h/2 + 60, 'App Server 2', 'app', 5, 800);
+        GameState.nodes['Cache1'] = new ServerNode(this, w * 0.65, h/2 - 180, 'Cache', 'cache', 20, 50);
+        GameState.nodes['Database1'] = new ServerNode(this, w * 0.65, h/2, 'Database', 'database', 3, 1200);
     }
 
     setupCDNButton() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         
-        // Create button background
-        this.cdnButtonBg = this.add.rectangle(w * 0.24, h - 50, 220, 40, 0x00bcd4);
-        this.cdnButtonBg.setStrokeStyle(2, 0x00e5ff);
+        this.cdnButtonBg = this.add.rectangle(w * 0.15, h - 50, 200, 40, 0x4caf50);
+        this.cdnButtonBg.setStrokeStyle(2, 0x66bb6a);
         this.cdnButtonBg.setInteractive({ useHandCursor: true });
         
-        // Create button text
-        this.cdnButtonText = this.add.text(w * 0.24, h - 50, '+ Add CDN ($400)', {
+        this.cdnButtonText = this.add.text(w * 0.15, h - 50, '+ Add CDN ($400)', {
             fontSize: '16px',
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
-        // Add hover effect
-        this.cdnButtonBg.on('pointerover', () => {
-            this.cdnButtonBg.setFillStyle(0x00e5ff);
-        });
-        
-        this.cdnButtonBg.on('pointerout', () => {
-            if (!this.hasCDN) {
-                this.cdnButtonBg.setFillStyle(0x00bcd4);
-            }
-        });
-        
-        // Add click handler
-        this.cdnButtonBg.on('pointerdown', () => {
-            this.addCDN();
-        });
+        this.cdnButtonBg.on('pointerover', () => this.cdnButtonBg.setFillStyle(0x66bb6a));
+        this.cdnButtonBg.on('pointerout', () => { if (!this.hasCDN) this.cdnButtonBg.setFillStyle(0x4caf50); });
+        this.cdnButtonBg.on('pointerdown', () => this.addCDN());
     }
 
     addCDN() {
         if (this.hasCDN) {
-            alert('CDN already added!');
+            this.showToast('CDN already added!');
             return;
         }
 
         const cost = 400;
         if (GameState.money < cost) {
-            alert(`Not enough money! Need $${cost}, have $${GameState.money}`);
+            this.showToast(`Not enough money! Need $${cost}`);
             return;
         }
 
-        // Deduct cost
         GameState.money -= cost;
         this.hasCDN = true;
 
-        // Create CDN node between users and load balancer
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         
-        const cdnConfig = CONFIG.level7.servers.cdn;
-        GameState.nodes['CDN1'] = new ServerNode(
-            this, w * 0.24, h/2,
-            'CDN', 'cdn', cdnConfig.capacity, cdnConfig.speed
-        );
+        GameState.nodes['CDN1'] = new ServerNode(this, w * 0.15, h/2 - 200, 'CDN', 'cdn', 50, 30);
 
-        // Update button appearance
-        this.cdnButtonBg.setFillStyle(0x666666);
         this.cdnButtonText.setText('✓ CDN Added');
+        this.cdnButtonBg.setFillStyle(0x666666);
+        this.cdnButtonBg.disableInteractive();
 
-        updateUI();
-        this.showDifficultyToast('CDN added! Static content will be served from the edge.');
-    }
-
-    startSimulation() {
-        if (GameState.isRunning || GameState.isGameOver) return;
-        
-        GameState.isRunning = true;
-        GameState.isPaused = false;
-        this.time.paused = false;
-        this.tweens.resumeAll();
-        
-        this.scheduleNextWave();
-        
-        this.difficultyTimer = this.time.addEvent({
-            delay: CONFIG.level7.difficultyInterval,
-            callback: () => this.increaseDifficulty(),
-            loop: true
-        });
-        
-        updateUI();
-    }
-
-    pauseSimulation() {
-        if (!GameState.isRunning || GameState.isPaused || GameState.isGameOver) return;
-        
-        GameState.isPaused = true;
-        this.time.paused = true;
-        this.tweens.pauseAll();
-        updateUI();
-    }
-
-    resumeSimulation() {
-        if (!GameState.isRunning || !GameState.isPaused || GameState.isGameOver) return;
-        
-        GameState.isPaused = false;
-        this.time.paused = false;
-        this.tweens.resumeAll();
-        updateUI();
-    }
-
-    scheduleNextWave() {
-        if (!GameState.isRunning) return;
-        
-        const users = ['User1', 'User2', 'User3'];
-        
-        for (let i = 0; i < this.packetsPerWave; i++) {
-            const userNode = GameState.nodes[users[Math.floor(Math.random() * users.length)]];
-            this.time.delayedCall(i * 100, () => this.spawnPacket(userNode));
-        }
-        
-        this.trafficTimer = this.time.delayedCall(this.currentTrafficDelay, () => {
-            this.scheduleNextWave();
-        });
-    }
-
-    increaseDifficulty() {
-        GameState.difficultyLevel++;
-        
-        const stageName = `stage${GameState.difficultyLevel}`;
-        const stage = CONFIG.level7.difficulty[stageName];
-        
-        if (!stage) {
-            this.showDifficultyToast("Maximum load reached");
-            return;
-        }
-        
-        this.currentTrafficDelay = stage.trafficDelay;
-        this.packetsPerWave = stage.packetsPerWave;
-        this.showDifficultyToast(stage.message);
-        updateUI();
-    }
-
-    showDifficultyToast(msg) {
-        const toast = document.getElementById('difficulty-toast');
-        toast.innerText = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
+        this.updateUI();
+        this.showToast('CDN added! Static content served faster.');
     }
 
     update() {
@@ -381,41 +127,23 @@ export class Level7Scene extends Phaser.Scene {
         const cache = GameState.nodes['Cache1'];
         const db = GameState.nodes['Database1'];
         
-        // Draw User → CDN or User → LoadBalancer connections
         ['User1', 'User2', 'User3'].forEach(uid => {
             const user = GameState.nodes[uid];
-            if (cdn) {
-                // If CDN exists, users connect to it
-                drawDualLines(this.graphics, user, cdn);
-            } else if (lb) {
-                // Otherwise, users connect directly to load balancer
-                drawDualLines(this.graphics, user, lb);
-            }
+            if (cdn) drawDualLines(this.graphics, user, cdn);
+            if (lb) drawDualLines(this.graphics, user, lb);
         });
         
-        // Draw CDN → LoadBalancer connection
-        if (cdn && lb) {
-            drawDualLines(this.graphics, cdn, lb);
-        }
-        
-        // Draw LoadBalancer → App connections
-        if (lb) {
-            if (app1) drawDualLines(this.graphics, lb, app1);
-            if (app2) drawDualLines(this.graphics, lb, app2);
-        }
-        
-        // Draw App → Cache connections
+        if (cdn && lb) drawDualLines(this.graphics, cdn, lb);
+        if (lb && app1) drawDualLines(this.graphics, lb, app1);
+        if (lb && app2) drawDualLines(this.graphics, lb, app2);
         if (app1 && cache) drawDualLines(this.graphics, app1, cache);
         if (app2 && cache) drawDualLines(this.graphics, app2, cache);
-        
-        // Draw App → Database connections
         if (app1 && db) drawDualLines(this.graphics, app1, db);
         if (app2 && db) drawDualLines(this.graphics, app2, db);
     }
 
     spawnPacket(startNode) {
         const isWrite = Math.random() * 100 < CONFIG.writeRequestPercentage;
-        
         let packet;
         
         if (isWrite) {
@@ -433,70 +161,12 @@ export class Level7Scene extends Phaser.Scene {
             packet.y = startNode.y;
             packet.isWrite = true;
         } else {
-            packet = this.add.circle(
-                startNode.x,
-                startNode.y, 
-                5,
-                CONFIG.colors.packetReq
-            );
+            packet = this.add.circle(startNode.x, startNode.y, 5, CONFIG.colors.packetReq);
             packet.isWrite = false;
         }
         
         packet.sourceNode = startNode;
         packet.isResponse = false;
-        
         startNode.routePacket(packet);
-    }
-
-    skipLevel() {
-        if (this.trafficTimer) this.trafficTimer.remove();
-        if (this.difficultyTimer) this.difficultyTimer.remove();
-
-        GameState.total = CONFIG.level7Target;
-        GameState.success = CONFIG.level7Target;
-        GameState.errors = 0;
-        GameState.isRunning = false;
-        GameState.isGameOver = true;
-
-        updateUI();
-        
-        const rate = (GameState.errors / GameState.total) * 100;
-        const modal = document.getElementById('result-modal');
-        const title = document.getElementById('modal-title');
-        const body = document.getElementById('modal-body');
-        const btnNext = document.getElementById('btn-modal-next');
-
-        modal.style.display = 'block';
-        modal.classList.add('show');
-
-        title.innerText = "Level 7 Complete!";
-        body.innerHTML = `
-            <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
-            <p>You successfully handled ${CONFIG.level7Target} requests with CDN!</p>
-            
-            <div class="concept-box" style="background: rgba(0, 188, 212, 0.1); border: 1px solid #00bcd4; border-radius: 8px; padding: 15px; margin-top: 15px;">
-                <strong>Architect's Notes: Content Delivery Network (CDN)</strong><br/>
-                Adding a CDN layer provides significant benefits:
-                <br/><br/>
-                <ul style="text-align: left; margin-left: 20px;">
-                    <li>✅ Dramatically reduces latency with edge caching (5ms vs 600ms)</li>
-                    <li>✅ Offloads 80% of read traffic from backend infrastructure</li>
-                    <li>✅ Improved user experience with faster page loads</li>
-                    <li>✅ Reduced bandwidth costs on origin servers</li>
-                    <li>❌ Additional service costs</li>
-                    <li>❌ Cache invalidation complexity</li>
-                    <li>❌ Not suitable for dynamic or personalized content</li>
-                </ul>
-                <br/>
-                <strong>Key Insight:</strong> CDNs are essential for modern web applications. By caching content at edge locations close to users, CDNs provide the fastest possible response times while dramatically reducing load on your backend infrastructure.
-            </div>
-        `;
-        
-        // Show next button to go to Level 8
-        btnNext.style.display = 'inline-block';
-        btnNext.textContent = 'Enter Level 8';
-        btnNext.onclick = () => {
-            this.scene.start('Level8Scene');
-        };
     }
 }
