@@ -107,6 +107,98 @@ export class Level2Scene extends Phaser.Scene {
         this.setupBackground();
         this.createNodes();
         this.setupZoom();
+        this.setupCameraDrag();
+    }
+
+    /**
+     * Setup Camera Drag
+     * 
+     * Enables dragging the entire canvas by clicking and dragging the background.
+     * Works regardless of game state (running, paused, or stopped).
+     */
+    setupCameraDrag() {
+        // Camera drag state
+        this.isDraggingCamera = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.cameraStartX = 0;
+        this.cameraStartY = 0;
+
+        // Listen for pointer down on the canvas (not on game objects)
+        this.input.on('pointerdown', (pointer) => {
+            // Only start camera drag if not clicking on a game object
+            // Right mouse button or middle mouse button can also be used
+            if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
+                this.startCameraDrag(pointer);
+            } else if (pointer.leftButtonDown() && !pointer.event.target.closest('.server-node')) {
+                // Left button can drag if not over a node
+                // Check if we're over any interactive object
+                const objectsUnderPointer = this.input.hitTestPointer(pointer);
+                if (objectsUnderPointer.length === 0) {
+                    this.startCameraDrag(pointer);
+                }
+            }
+        });
+
+        // Listen for pointer move
+        this.input.on('pointermove', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.updateCameraDrag(pointer);
+            }
+        });
+
+        // Listen for pointer up
+        this.input.on('pointerup', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.endCameraDrag();
+            }
+        });
+
+        // Also end drag if pointer leaves the canvas
+        this.input.on('pointerout', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.endCameraDrag();
+            }
+        });
+    }
+
+    /**
+     * Start Camera Drag
+     * 
+     * @param {Phaser.Input.Pointer} pointer - The pointer that initiated the drag
+     */
+    startCameraDrag(pointer) {
+        this.isDraggingCamera = true;
+        this.dragStartX = pointer.x;
+        this.dragStartY = pointer.y;
+        this.cameraStartX = this.cameras.main.scrollX;
+        this.cameraStartY = this.cameras.main.scrollY;
+        
+        // Change cursor to grabbing hand
+        this.input.setDefaultCursor('grabbing');
+    }
+
+    /**
+     * Update Camera Drag
+     * 
+     * @param {Phaser.Input.Pointer} pointer - The pointer being moved
+     */
+    updateCameraDrag(pointer) {
+        // Calculate how far the pointer has moved
+        const deltaX = pointer.x - this.dragStartX;
+        const deltaY = pointer.y - this.dragStartY;
+        
+        // Move camera in opposite direction (to create dragging effect)
+        this.cameras.main.scrollX = this.cameraStartX - deltaX / this.currentZoom;
+        this.cameras.main.scrollY = this.cameraStartY - deltaY / this.currentZoom;
+    }
+
+    /**
+     * End Camera Drag
+     */
+    endCameraDrag() {
+        this.isDraggingCamera = false;
+        this.input.setDefaultCursor('default');
     }
 
     /**
@@ -180,15 +272,16 @@ export class Level2Scene extends Phaser.Scene {
          * Add Grid Background
          * Creates a subtle grid pattern for visual context
          */
+        const gridSize = 6;
         this.add.grid(
-            w/2, h/2,           // Center position
-            w, h,               // Full width and height
-            40, 40,             // Grid cell size (40x40 pixels)
-            0x2a2a2a,           // Grid fill color (light gray to match background)
-            0,                  // Fill alpha (0 = fully transparent)
-            0x444444,           // Grid line color (medium gray, visible on light gray)
-            0.3                 // Line alpha (30% opacity for subtle effect)
-        );
+            0, 0,                       // Position at world origin
+            w * gridSize, h * gridSize, // Large grid (6x viewport size)
+            40, 40,                     // Grid cell size (40x40 pixels)
+            0x2a2a2a,                   // Grid fill color (matches background)
+            0,                          // Fill alpha (0 = fully transparent)
+            0x444444,                   // Grid line color (medium gray)
+            0.3                         // Line alpha (30% opacity for subtle effect)
+        ).setOrigin(0.5, 0.5);          // Center the grid
         
         /**
          * Graphics Object for Connection Lines

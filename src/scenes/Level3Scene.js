@@ -104,6 +104,98 @@ export class Level3Scene extends Phaser.Scene {
         this.createNodes();
         this.createAddDatabaseButton();
         this.setupZoom();
+        this.setupCameraDrag();
+    }
+
+    /**
+     * Setup Camera Drag
+     * 
+     * Enables dragging the entire canvas by clicking and dragging the background.
+     * Works regardless of game state (running, paused, or stopped).
+     */
+    setupCameraDrag() {
+        // Camera drag state
+        this.isDraggingCamera = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.cameraStartX = 0;
+        this.cameraStartY = 0;
+
+        // Listen for pointer down on the canvas (not on game objects)
+        this.input.on('pointerdown', (pointer) => {
+            // Only start camera drag if not clicking on a game object
+            // Right mouse button or middle mouse button can also be used
+            if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
+                this.startCameraDrag(pointer);
+            } else if (pointer.leftButtonDown() && !pointer.event.target.closest('.server-node')) {
+                // Left button can drag if not over a node
+                // Check if we're over any interactive object
+                const objectsUnderPointer = this.input.hitTestPointer(pointer);
+                if (objectsUnderPointer.length === 0) {
+                    this.startCameraDrag(pointer);
+                }
+            }
+        });
+
+        // Listen for pointer move
+        this.input.on('pointermove', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.updateCameraDrag(pointer);
+            }
+        });
+
+        // Listen for pointer up
+        this.input.on('pointerup', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.endCameraDrag();
+            }
+        });
+
+        // Also end drag if pointer leaves the canvas
+        this.input.on('pointerout', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.endCameraDrag();
+            }
+        });
+    }
+
+    /**
+     * Start Camera Drag
+     * 
+     * @param {Phaser.Input.Pointer} pointer - The pointer that initiated the drag
+     */
+    startCameraDrag(pointer) {
+        this.isDraggingCamera = true;
+        this.dragStartX = pointer.x;
+        this.dragStartY = pointer.y;
+        this.cameraStartX = this.cameras.main.scrollX;
+        this.cameraStartY = this.cameras.main.scrollY;
+        
+        // Change cursor to grabbing hand
+        this.input.setDefaultCursor('grabbing');
+    }
+
+    /**
+     * Update Camera Drag
+     * 
+     * @param {Phaser.Input.Pointer} pointer - The pointer being moved
+     */
+    updateCameraDrag(pointer) {
+        // Calculate how far the pointer has moved
+        const deltaX = pointer.x - this.dragStartX;
+        const deltaY = pointer.y - this.dragStartY;
+        
+        // Move camera in opposite direction (to create dragging effect)
+        this.cameras.main.scrollX = this.cameraStartX - deltaX / this.currentZoom;
+        this.cameras.main.scrollY = this.cameraStartY - deltaY / this.currentZoom;
+    }
+
+    /**
+     * End Camera Drag
+     */
+    endCameraDrag() {
+        this.isDraggingCamera = false;
+        this.input.setDefaultCursor('default');
     }
 
     /**
@@ -174,15 +266,16 @@ export class Level3Scene extends Phaser.Scene {
         /**
          * Add Grid Background
          */
+        const gridSize = 6;
         this.add.grid(
-            w/2, h/2,
-            w, h,
+            0, 0,
+            w * gridSize, h * gridSize,
             40, 40,
             0x2a2a2a,
             0,
             0x444444,
             0.3
-        );
+        ).setOrigin(0.5, 0.5);
         
         /**
          * Graphics Object for Connection Lines

@@ -73,7 +73,66 @@ export class Level8Scene extends Phaser.Scene {
         this.setupBackground();
         this.createNodes();
         this.setupZoom();
+        this.setupCameraDrag();
         this.setupReadReplicaButton();
+    }
+
+    setupCameraDrag() {
+        this.isDraggingCamera = false;
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.cameraStartX = 0;
+        this.cameraStartY = 0;
+
+        this.input.on('pointerdown', (pointer) => {
+            if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
+                this.startCameraDrag(pointer);
+            } else if (pointer.leftButtonDown() && !pointer.event.target.closest('.server-node')) {
+                const objectsUnderPointer = this.input.hitTestPointer(pointer);
+                if (objectsUnderPointer.length === 0) {
+                    this.startCameraDrag(pointer);
+                }
+            }
+        });
+
+        this.input.on('pointermove', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.updateCameraDrag(pointer);
+            }
+        });
+
+        this.input.on('pointerup', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.endCameraDrag();
+            }
+        });
+
+        this.input.on('pointerout', (pointer) => {
+            if (this.isDraggingCamera) {
+                this.endCameraDrag();
+            }
+        });
+    }
+
+    startCameraDrag(pointer) {
+        this.isDraggingCamera = true;
+        this.dragStartX = pointer.x;
+        this.dragStartY = pointer.y;
+        this.cameraStartX = this.cameras.main.scrollX;
+        this.cameraStartY = this.cameras.main.scrollY;
+        this.input.setDefaultCursor('grabbing');
+    }
+
+    updateCameraDrag(pointer) {
+        const deltaX = pointer.x - this.dragStartX;
+        const deltaY = pointer.y - this.dragStartY;
+        this.cameras.main.scrollX = this.cameraStartX - deltaX / this.currentZoom;
+        this.cameras.main.scrollY = this.cameraStartY - deltaY / this.currentZoom;
+    }
+
+    endCameraDrag() {
+        this.isDraggingCamera = false;
+        this.input.setDefaultCursor('default');
     }
 
     setupZoom() {
@@ -114,7 +173,8 @@ export class Level8Scene extends Phaser.Scene {
         const h = this.cameras.main.height;
 
         this.cameras.main.setBackgroundColor('#2a2a2a');
-        this.add.grid(w/2, h/2, w, h, 40, 40, 0x2a2a2a, 0, 0x444444, 0.3);
+        const gridSize = 6;
+        this.add.grid(0, 0, w * gridSize, h * gridSize, 40, 40, 0x2a2a2a, 0, 0x444444, 0.3).setOrigin(0.5, 0.5);
         this.graphics = this.add.graphics();
     }
 
