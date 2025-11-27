@@ -187,6 +187,69 @@ export class ServerNode extends Phaser.GameObjects.Container {
         } else if (this.type === 'app' || this.type === 'database') {
             this.createServerStats();    // Show level badge
         }
+        
+        // Enable dragging functionality
+        this.setupDragging();
+    }
+    
+    /**
+     * Setup Dragging Functionality
+     * 
+     * Enables dragging of nodes when the game is not running.
+     * Players can rearrange nodes before starting or after resetting the game.
+     */
+    setupDragging() {
+        // Store original position for potential reset
+        this.originalX = this.x;
+        this.originalY = this.y;
+        
+        // Set hit area based on node shape for proper interaction
+        // Use a larger hit area to make it easier to click
+        const hitAreaSize = 100;
+        const hitArea = new Phaser.Geom.Circle(0, 0, hitAreaSize / 2);
+        
+        // Make the entire container interactive with explicit hit area
+        this.setInteractive(hitArea, Phaser.Geom.Circle.Contains);
+        
+        // Enable dragging on this container
+        this.scene.input.setDraggable(this);
+        
+        // Change cursor to pointer on hover
+        this.on('pointerover', () => {
+            if (!GameState.isRunning) {
+                this.scene.input.setDefaultCursor('pointer');
+            }
+        });
+        
+        this.on('pointerout', () => {
+            this.scene.input.setDefaultCursor('default');
+        });
+        
+        // Drag start event
+        this.on('dragstart', (pointer) => {
+            // Only allow dragging if game is not running
+            if (!GameState.isRunning) {
+                this.setAlpha(0.7); // Make semi-transparent while dragging
+                this.setDepth(1000); // Bring to front
+            }
+        });
+        
+        // Dragging event
+        this.on('drag', (pointer, dragX, dragY) => {
+            // Only update position if game is not running
+            if (!GameState.isRunning) {
+                this.x = dragX;
+                this.y = dragY;
+            }
+        });
+        
+        // Drag end event
+        this.on('dragend', (pointer) => {
+            if (!GameState.isRunning) {
+                this.setAlpha(1); // Restore full opacity
+                this.setDepth(0); // Return to normal depth
+            }
+        });
     }
 
     /**
