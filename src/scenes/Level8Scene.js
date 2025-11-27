@@ -1,26 +1,27 @@
 /**
- * Level 7 Scene - CDN Introduction
+ * Level 8 Scene - Read-Write Splitting
  * 
- * This scene implements the seventh level of the game, which teaches the concept
- * of Content Delivery Network (CDN) by introducing a CDN layer between users and load balancer.
+ * This scene implements the eighth level of the game, which teaches the concept
+ * of read-write splitting by introducing a read replica database.
  * 
  * Level Objectives:
- * - Process 1600 requests total
+ * - Process 1800 requests total
  * - Maintain error rate below 1%
- * - Learn how CDN reduces load on backend infrastructure
+ * - Learn how read-write splitting optimizes database performance
  * 
  * Architecture:
  * - 3 User nodes (generate requests)
- * - 1 CDN Server (optional, can be added by player)
+ * - 1 CDN Server (provided by default)
  * - 1 Load Balancer (distribute traffic)
  * - 2 App Servers (process business logic)
  * - 1 Cache Server (cache layer)
- * - 1 Database Server (data storage)
+ * - 1 Master Database (handles writes, provided by default)
+ * - 1 Read Replica Database (optional, handles reads)
  * 
  * Key Concepts Taught:
- * - CDN reduces latency with edge caching
- * - CDN offloads traffic from backend infrastructure
- * - CDN is especially effective for static content and read requests
+ * - Read-write splitting reduces load on master database
+ * - Read replicas are optimized for read operations
+ * - Write operations always go to master to maintain consistency
  */
 
 import { CONFIG, GameState, resetGameState } from '../config.js';
@@ -28,9 +29,9 @@ import { ServerNode } from '../objects/ServerNode.js';
 import { drawDualLines } from '../utils/animations.js';
 import { updateUI } from '../utils/uiManager.js';
 
-export class Level7Scene extends Phaser.Scene {
+export class Level8Scene extends Phaser.Scene {
     constructor() {
-        super({ key: 'Level7Scene' });
+        super({ key: 'Level8Scene' });
     }
 
     create() {
@@ -44,34 +45,35 @@ export class Level7Scene extends Phaser.Scene {
         
         // Update Header
         const header = document.querySelector('#header h1');
-        if (header) header.textContent = 'Level 7: CDN Layer';
+        if (header) header.textContent = 'Level 8: Read-Write Splitting';
         
         // Update Objectives
         const objectivesList = document.querySelector('.objectives-list');
         if (objectivesList) {
             objectivesList.innerHTML = `
-                <li>Complete ${CONFIG.level7Target} requests</li>
+                <li>Complete ${CONFIG.level8Target} requests</li>
                 <li>Maintain error rate < ${CONFIG.maxErrorRate}%</li>
-                <li>Add a CDN to reduce backend load</li>
+                <li>Add Read Replica to separate read/write traffic</li>
             `;
         }
         
         // Reset Game State
-        resetGameState(7);
+        resetGameState(8);
         
         // Initialize Scene State
         this.trafficTimer = null;
         this.difficultyTimer = null;
-        this.currentTrafficDelay = CONFIG.level7.initialTrafficDelay;
-        this.packetsPerWave = CONFIG.level7.initialPacketsPerWave;
-        this.hasCDN = false;
+        this.currentTrafficDelay = CONFIG.level8.initialTrafficDelay;
+        this.packetsPerWave = CONFIG.level8.initialPacketsPerWave;
+        this.hasCDN = true; // CDN is provided by default in Level 8
         this.hasLoadBalancer = true; // Load balancer is already present
+        this.hasReadReplica = false; // Read replica can be added
 
         updateUI();
         this.setupBackground();
         this.createNodes();
         this.setupZoom();
-        this.setupCDNButton();
+        this.setupReadReplicaButton();
     }
 
     setupZoom() {
@@ -121,7 +123,7 @@ export class Level7Scene extends Phaser.Scene {
         const h = this.cameras.main.height;
 
         // Create User Nodes (left side)
-        const userConfig = CONFIG.level7.servers.user;
+        const userConfig = CONFIG.level8.servers.user;
         GameState.nodes['User1'] = new ServerNode(
             this, w * 0.15, h/2 - 100,
             'User A', 'user', userConfig.capacity, userConfig.speed
@@ -135,15 +137,22 @@ export class Level7Scene extends Phaser.Scene {
             'User C', 'user', userConfig.capacity, userConfig.speed
         );
         
+        // Create CDN (provided by default)
+        const cdnConfig = CONFIG.level8.servers.cdn;
+        GameState.nodes['CDN1'] = new ServerNode(
+            this, w * 0.24, h/2,
+            'CDN', 'cdn', cdnConfig.capacity, cdnConfig.speed
+        );
+        
         // Create Load Balancer (already present)
-        const lbConfig = CONFIG.level7.servers.loadbalancer;
+        const lbConfig = CONFIG.level8.servers.loadbalancer;
         GameState.nodes['LoadBalancer1'] = new ServerNode(
             this, w * 0.33, h/2,
             'Load Balancer', 'loadbalancer', lbConfig.capacity, lbConfig.speed
         );
         
         // Create 2 Application Servers (center-left, stacked vertically)
-        const appConfig = CONFIG.level7.servers.app;
+        const appConfig = CONFIG.level8.servers.app;
         GameState.nodes['App1'] = new ServerNode(
             this, w * 0.50, h/2 - 60,
             'App Server 1', 'app', appConfig.capacity, appConfig.speed
@@ -154,60 +163,60 @@ export class Level7Scene extends Phaser.Scene {
         );
         
         // Create Cache Server (above app servers)
-        const cacheConfig = CONFIG.level7.servers.cache;
+        const cacheConfig = CONFIG.level8.servers.cache;
         GameState.nodes['Cache1'] = new ServerNode(
             this, w * 0.70, h/2 - 180,
             'Cache', 'cache', cacheConfig.capacity, cacheConfig.speed
         );
         
-        // Create Database Server (right side)
-        const dbConfig = CONFIG.level7.servers.database;
+        // Create Master Database Server (right side)
+        const dbConfig = CONFIG.level8.servers.database;
         GameState.nodes['Database1'] = new ServerNode(
             this, w * 0.70, h/2,
-            'Database', 'database', dbConfig.capacity, dbConfig.speed
+            'Master DB', 'database', dbConfig.capacity, dbConfig.speed
         );
     }
 
-    setupCDNButton() {
+    setupReadReplicaButton() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         
         // Create button background
-        this.cdnButtonBg = this.add.rectangle(w * 0.24, h - 50, 220, 40, 0x00bcd4);
-        this.cdnButtonBg.setStrokeStyle(2, 0x00e5ff);
-        this.cdnButtonBg.setInteractive({ useHandCursor: true });
+        this.rrButtonBg = this.add.rectangle(w * 0.24, h - 50, 280, 40, 0x4caf50);
+        this.rrButtonBg.setStrokeStyle(2, 0x66bb6a);
+        this.rrButtonBg.setInteractive({ useHandCursor: true });
         
         // Create button text
-        this.cdnButtonText = this.add.text(w * 0.24, h - 50, '+ Add CDN ($400)', {
+        this.rrButtonText = this.add.text(w * 0.24, h - 50, '+ Add Read Replica ($500)', {
             fontSize: '16px',
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
         // Add hover effect
-        this.cdnButtonBg.on('pointerover', () => {
-            this.cdnButtonBg.setFillStyle(0x00e5ff);
+        this.rrButtonBg.on('pointerover', () => {
+            this.rrButtonBg.setFillStyle(0x66bb6a);
         });
         
-        this.cdnButtonBg.on('pointerout', () => {
-            if (!this.hasCDN) {
-                this.cdnButtonBg.setFillStyle(0x00bcd4);
+        this.rrButtonBg.on('pointerout', () => {
+            if (!this.hasReadReplica) {
+                this.rrButtonBg.setFillStyle(0x4caf50);
             }
         });
         
         // Add click handler
-        this.cdnButtonBg.on('pointerdown', () => {
-            this.addCDN();
+        this.rrButtonBg.on('pointerdown', () => {
+            this.addReadReplica();
         });
     }
 
-    addCDN() {
-        if (this.hasCDN) {
-            alert('CDN already added!');
+    addReadReplica() {
+        if (this.hasReadReplica) {
+            alert('Read Replica already added!');
             return;
         }
 
-        const cost = 400;
+        const cost = 500;
         if (GameState.money < cost) {
             alert(`Not enough money! Need $${cost}, have $${GameState.money}`);
             return;
@@ -215,24 +224,24 @@ export class Level7Scene extends Phaser.Scene {
 
         // Deduct cost
         GameState.money -= cost;
-        this.hasCDN = true;
+        this.hasReadReplica = true;
 
-        // Create CDN node between users and load balancer
+        // Create Read Replica node next to master database
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         
-        const cdnConfig = CONFIG.level7.servers.cdn;
-        GameState.nodes['CDN1'] = new ServerNode(
-            this, w * 0.24, h/2,
-            'CDN', 'cdn', cdnConfig.capacity, cdnConfig.speed
+        const rrConfig = CONFIG.level8.servers.readreplica;
+        GameState.nodes['ReadReplica1'] = new ServerNode(
+            this, w * 0.70, h/2 + 120,
+            'Read Replica', 'database', rrConfig.capacity, rrConfig.speed
         );
 
         // Update button appearance
-        this.cdnButtonBg.setFillStyle(0x666666);
-        this.cdnButtonText.setText('✓ CDN Added');
+        this.rrButtonBg.setFillStyle(0x666666);
+        this.rrButtonText.setText('✓ Read Replica Added');
 
         updateUI();
-        this.showDifficultyToast('CDN added! Static content will be served from the edge.');
+        this.showDifficultyToast('Read Replica added! Read requests will be handled separately.');
     }
 
     startSimulation() {
@@ -246,7 +255,7 @@ export class Level7Scene extends Phaser.Scene {
         this.scheduleNextWave();
         
         this.difficultyTimer = this.time.addEvent({
-            delay: CONFIG.level7.difficultyInterval,
+            delay: CONFIG.level8.difficultyInterval,
             callback: () => this.increaseDifficulty(),
             loop: true
         });
@@ -291,7 +300,7 @@ export class Level7Scene extends Phaser.Scene {
         GameState.difficultyLevel++;
         
         const stageName = `stage${GameState.difficultyLevel}`;
-        const stage = CONFIG.level7.difficulty[stageName];
+        const stage = CONFIG.level8.difficulty[stageName];
         
         if (!stage) {
             this.showDifficultyToast("Maximum load reached");
@@ -319,17 +328,14 @@ export class Level7Scene extends Phaser.Scene {
         const app1 = GameState.nodes['App1'];
         const app2 = GameState.nodes['App2'];
         const cache = GameState.nodes['Cache1'];
-        const db = GameState.nodes['Database1'];
+        const masterDb = GameState.nodes['Database1'];
+        const readReplica = GameState.nodes['ReadReplica1'];
         
-        // Draw User → CDN or User → LoadBalancer connections
+        // Draw User → CDN connections
         ['User1', 'User2', 'User3'].forEach(uid => {
             const user = GameState.nodes[uid];
             if (cdn) {
-                // If CDN exists, users connect to it
                 drawDualLines(this.graphics, user, cdn);
-            } else if (lb) {
-                // Otherwise, users connect directly to load balancer
-                drawDualLines(this.graphics, user, lb);
             }
         });
         
@@ -349,8 +355,14 @@ export class Level7Scene extends Phaser.Scene {
         if (app2 && cache) drawDualLines(this.graphics, app2, cache);
         
         // Draw App → Database connections
-        if (app1 && db) drawDualLines(this.graphics, app1, db);
-        if (app2 && db) drawDualLines(this.graphics, app2, db);
+        if (app1 && masterDb) drawDualLines(this.graphics, app1, masterDb);
+        if (app2 && masterDb) drawDualLines(this.graphics, app2, masterDb);
+        
+        // Draw App → Read Replica connections (if exists)
+        if (readReplica) {
+            if (app1) drawDualLines(this.graphics, app1, readReplica);
+            if (app2) drawDualLines(this.graphics, app2, readReplica);
+        }
     }
 
     spawnPacket(startNode) {
@@ -392,8 +404,8 @@ export class Level7Scene extends Phaser.Scene {
         if (this.trafficTimer) this.trafficTimer.remove();
         if (this.difficultyTimer) this.difficultyTimer.remove();
 
-        GameState.total = CONFIG.level7Target;
-        GameState.success = CONFIG.level7Target;
+        GameState.total = CONFIG.level8Target;
+        GameState.success = CONFIG.level8Target;
         GameState.errors = 0;
         GameState.isRunning = false;
         GameState.isGameOver = true;
@@ -409,34 +421,50 @@ export class Level7Scene extends Phaser.Scene {
         modal.style.display = 'block';
         modal.classList.add('show');
 
-        title.innerText = "Level 7 Complete!";
+        title.innerText = "Level 8 Complete!";
         body.innerHTML = `
             <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
-            <p>You successfully handled ${CONFIG.level7Target} requests with CDN!</p>
+            <p>You successfully handled ${CONFIG.level8Target} requests with read-write splitting!</p>
             
-            <div class="concept-box" style="background: rgba(0, 188, 212, 0.1); border: 1px solid #00bcd4; border-radius: 8px; padding: 15px; margin-top: 15px;">
-                <strong>Architect's Notes: Content Delivery Network (CDN)</strong><br/>
-                Adding a CDN layer provides significant benefits:
+            <div class="concept-box" style="background: rgba(76, 175, 80, 0.1); border: 1px solid #4caf50; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                <strong>Architect's Notes: Read-Write Splitting</strong><br/>
+                Separating read and write operations provides significant benefits:
                 <br/><br/>
                 <ul style="text-align: left; margin-left: 20px;">
-                    <li>✅ Dramatically reduces latency with edge caching (5ms vs 600ms)</li>
-                    <li>✅ Offloads 80% of read traffic from backend infrastructure</li>
-                    <li>✅ Improved user experience with faster page loads</li>
-                    <li>✅ Reduced bandwidth costs on origin servers</li>
-                    <li>❌ Additional service costs</li>
-                    <li>❌ Cache invalidation complexity</li>
-                    <li>❌ Not suitable for dynamic or personalized content</li>
+                    <li>✅ Offloads 70% of database traffic to read replicas</li>
+                    <li>✅ Master database focuses on write consistency</li>
+                    <li>✅ Read replicas can be optimized for query performance</li>
+                    <li>✅ Enables horizontal scaling of read capacity</li>
+                    <li>❌ Replication lag (eventual consistency)</li>
+                    <li>❌ Complexity in maintaining data consistency</li>
+                    <li>❌ Additional infrastructure costs</li>
                 </ul>
                 <br/>
-                <strong>Key Insight:</strong> CDNs are essential for modern web applications. By caching content at edge locations close to users, CDNs provide the fastest possible response times while dramatically reducing load on your backend infrastructure.
+                <strong>Key Insight:</strong> Read-write splitting is essential for scaling databases under heavy traffic. By directing all write operations to a master database and distributing read operations across multiple replicas, you can handle much higher traffic loads while maintaining data consistency.
             </div>
         `;
         
-        // Show next button to go to Level 8
-        btnNext.style.display = 'inline-block';
-        btnNext.textContent = 'Enter Level 8';
-        btnNext.onclick = () => {
-            this.scene.start('Level8Scene');
-        };
+        // This is the last level - hide next button
+        btnNext.style.display = 'none';
+        
+        const btnRetry = document.getElementById('btn-modal-retry');
+        if (btnRetry) {
+            btnRetry.textContent = 'Select Another Level';
+            btnRetry.style.display = 'inline-block';
+            btnRetry.onclick = () => {
+                modal.style.display = 'none';
+                modal.classList.remove('show');
+                const levelSelector = document.getElementById('level-selector');
+                if (levelSelector) {
+                    levelSelector.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    levelSelector.style.border = '3px solid #ffd700';
+                    levelSelector.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.5)';
+                    setTimeout(() => {
+                        levelSelector.style.border = '';
+                        levelSelector.style.boxShadow = '';
+                    }, 2000);
+                }
+            };
+        }
     }
 }

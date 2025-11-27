@@ -487,6 +487,12 @@ export class Level4Scene extends Phaser.Scene {
      * Creates a new request packet and routes it through the system.
      */
     spawnPacket(startNode) {
+        // Safety check: ensure startNode exists
+        if (!startNode || !startNode.active) {
+            console.error('spawnPacket called with invalid startNode:', startNode);
+            return;
+        }
+        
         const isWrite = Math.random() * 100 < CONFIG.writeRequestPercentage;
         
         let packet;

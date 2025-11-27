@@ -519,7 +519,100 @@ export const CONFIG = {
         }
     },
     
-    level7Target: 1600          // Level 7: Testing CDN effectiveness with higher load
+    level7Target: 1600,          // Level 7: Testing CDN effectiveness with higher load
+    
+    /**
+     * Level 8 Configuration
+     * Introduces read-write splitting with read replica database
+     */
+    level8: {
+        // Initial traffic generation settings
+        initialTrafficDelay: 2000,      // Initial delay between traffic waves (ms)
+        initialPacketsPerWave: 2,       // Starting number of packets per wave
+        difficultyInterval: 10000,      // Time between difficulty increases (ms)
+        
+        // Server node configurations
+        servers: {
+            user: {
+                capacity: 999,          // User nodes have unlimited capacity
+                speed: 10               // Instant request generation (ms)
+            },
+            cdn: {
+                capacity: 25,           // CDN has very high capacity
+                speed: 5,               // CDN is extremely fast (5ms) - edge caching
+                hitRate: 0.8            // 80% CDN hit rate for read requests
+            },
+            loadbalancer: {
+                capacity: 20,           // Load balancer has high capacity
+                speed: 5                // Load balancer is very fast (5ms)
+            },
+            app: {
+                capacity: 5,            // App server initial capacity
+                speed: 600              // App server initial processing speed (ms)
+            },
+            cache: {
+                capacity: 15,           // Cache initial capacity
+                speed: 10,              // Cache is extremely fast (10ms)
+                hitRate: 0.7            // 70% cache hit rate for read requests
+            },
+            database: {
+                capacity: 12,           // Database initial capacity (master)
+                speed: 400              // Database initial processing speed (ms)
+            },
+            readreplica: {
+                capacity: 15,           // Read replica has higher capacity for reads
+                speed: 300              // Read replica is faster (optimized for reads)
+            }
+        },
+        
+        // Difficulty progression stages
+        difficulty: {
+            stage1: {
+                level: 1,
+                trafficDelay: 1700,
+                packetsPerWave: 2,
+                message: "Traffic increasing..."
+            },
+            stage2: {
+                level: 2,
+                trafficDelay: 1400,
+                packetsPerWave: 3,
+                message: "Traffic increasing..."
+            },
+            stage3: {
+                level: 3,
+                trafficDelay: 1000,
+                packetsPerWave: 3,
+                message: "⚠ Higher traffic load!"
+            },
+            stage4: {
+                level: 4,
+                trafficDelay: 800,
+                packetsPerWave: 4,
+                message: "Database under pressure..."
+            },
+            stage5: {
+                level: 5,
+                trafficDelay: 600,
+                packetsPerWave: 4,
+                message: "⛔ Heavy load!"
+            },
+            stage6: {
+                level: 6,
+                trafficDelay: 500,
+                packetsPerWave: 5,
+                message: "⛔ Peak load!"
+            },
+            stage7: {
+                level: 7,
+                trafficDelay: 400,
+                packetsPerWave: 6,
+                message: "Maximum load! Read-write splitting critical!"
+            }
+        }
+    },
+    
+    level8Target: 1800          // Level 8: Testing read-write splitting with higher load
 };
 
 /**

@@ -22,6 +22,7 @@ import { Level4Scene } from './scenes/Level4Scene.js';
 import { Level5Scene } from './scenes/Level5Scene.js';
 import { Level6Scene } from './scenes/Level6Scene.js';
 import { Level7Scene } from './scenes/Level7Scene.js';
+import { Level8Scene } from './scenes/Level8Scene.js';
 
 /**
  * Phaser Game Configuration Object
@@ -50,7 +51,7 @@ const gameConfig = {
      * Scenes are the different "screens" or "levels" of the game
      * First scene in array (WelcomeScene) will be the default starting scene
      */
-    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene]
+    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene]
 };
 
 /**
@@ -161,6 +162,7 @@ function setupEventHandlers() {
             const level5Scene = game.scene.getScene('Level5Scene');
             const level6Scene = game.scene.getScene('Level6Scene');
             const level7Scene = game.scene.getScene('Level7Scene');
+            const level8Scene = game.scene.getScene('Level8Scene');
             
             console.log('Level1Scene active?', level1Scene?.sys.settings.active);
             console.log('Level2Scene active?', level2Scene?.sys.settings.active);
@@ -169,6 +171,7 @@ function setupEventHandlers() {
             console.log('Level5Scene active?', level5Scene?.sys.settings.active);
             console.log('Level6Scene active?', level6Scene?.sys.settings.active);
             console.log('Level7Scene active?', level7Scene?.sys.settings.active);
+            console.log('Level8Scene active?', level8Scene?.sys.settings.active);
             
             // Determine which scene is currently active
             const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
@@ -177,7 +180,8 @@ function setupEventHandlers() {
                                (level4Scene && level4Scene.sys.settings.active) ? level4Scene :
                                (level5Scene && level5Scene.sys.settings.active) ? level5Scene :
                                (level6Scene && level6Scene.sys.settings.active) ? level6Scene :
-                               (level7Scene && level7Scene.sys.settings.active) ? level7Scene : null;
+                               (level7Scene && level7Scene.sys.settings.active) ? level7Scene :
+                               (level8Scene && level8Scene.sys.settings.active) ? level8Scene : null;
             
             console.log('Active scene:', activeScene);
             
@@ -220,6 +224,7 @@ function setupEventHandlers() {
         const level5Scene = game.scene.getScene('Level5Scene');
         const level6Scene = game.scene.getScene('Level6Scene');
         const level7Scene = game.scene.getScene('Level7Scene');
+        const level8Scene = game.scene.getScene('Level8Scene');
         
         // Restart whichever scene is currently active
         if (level1Scene && level1Scene.sys.settings.active) {
@@ -236,6 +241,8 @@ function setupEventHandlers() {
             level6Scene.scene.restart();
         } else if (level7Scene && level7Scene.sys.settings.active) {
             level7Scene.scene.restart();
+        } else if (level8Scene && level8Scene.sys.settings.active) {
+            level8Scene.scene.restart();
         }
     });
 
@@ -336,6 +343,7 @@ function setupEventHandlers() {
         const level5Scene = game.scene.getScene('Level5Scene');
         const level6Scene = game.scene.getScene('Level6Scene');
         const level7Scene = game.scene.getScene('Level7Scene');
+        const level8Scene = game.scene.getScene('Level8Scene');
         
         // Call the skipLevel method on whichever scene is currently active
         if (level1Scene && level1Scene.sys.settings.active) {
@@ -352,6 +360,8 @@ function setupEventHandlers() {
             level6Scene.skipLevel();
         } else if (level7Scene && level7Scene.sys.settings.active) {
             level7Scene.skipLevel();
+        } else if (level8Scene && level8Scene.sys.settings.active) {
+            level8Scene.skipLevel();
         }
     });
 
@@ -503,6 +513,7 @@ function setupEventHandlers() {
                 const level4Scene = game.scene.getScene('Level4Scene');
                 const level5Scene = game.scene.getScene('Level5Scene');
                 const level6Scene = game.scene.getScene('Level6Scene');
+                const level8Scene = game.scene.getScene('Level8Scene');
                 if (welcomeScene) game.scene.stop('WelcomeScene');
                 if (level1Scene) game.scene.stop('Level1Scene');
                 if (level2Scene) game.scene.stop('Level2Scene');
@@ -510,8 +521,32 @@ function setupEventHandlers() {
                 if (level4Scene) game.scene.stop('Level4Scene');
                 if (level5Scene) game.scene.stop('Level5Scene');
                 if (level6Scene) game.scene.stop('Level6Scene');
+                if (level8Scene) game.scene.stop('Level8Scene');
                 // Start Level 7
                 game.scene.start('Level7Scene');
+                // Reset dropdown to default
+                setTimeout(() => { levelSelector.value = ''; }, 100);
+            } else if (selectedLevel === '8') {
+                console.log('Switching to Level 8');
+                // Stop all other scenes
+                const welcomeScene = game.scene.getScene('WelcomeScene');
+                const level1Scene = game.scene.getScene('Level1Scene');
+                const level2Scene = game.scene.getScene('Level2Scene');
+                const level3Scene = game.scene.getScene('Level3Scene');
+                const level4Scene = game.scene.getScene('Level4Scene');
+                const level5Scene = game.scene.getScene('Level5Scene');
+                const level6Scene = game.scene.getScene('Level6Scene');
+                const level7Scene = game.scene.getScene('Level7Scene');
+                if (welcomeScene) game.scene.stop('WelcomeScene');
+                if (level1Scene) game.scene.stop('Level1Scene');
+                if (level2Scene) game.scene.stop('Level2Scene');
+                if (level3Scene) game.scene.stop('Level3Scene');
+                if (level4Scene) game.scene.stop('Level4Scene');
+                if (level5Scene) game.scene.stop('Level5Scene');
+                if (level6Scene) game.scene.stop('Level6Scene');
+                if (level7Scene) game.scene.stop('Level7Scene');
+                // Start Level 8
+                game.scene.start('Level8Scene');
                 // Reset dropdown to default
                 setTimeout(() => { levelSelector.value = ''; }, 100);
             }
@@ -534,6 +569,7 @@ function setupEventHandlers() {
         const level5Scene = game.scene.getScene('Level5Scene');
         const level6Scene = game.scene.getScene('Level6Scene');
         const level7Scene = game.scene.getScene('Level7Scene');
+        const level8Scene = game.scene.getScene('Level8Scene');
         
         const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
                            (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
@@ -541,7 +577,8 @@ function setupEventHandlers() {
                            (level4Scene && level4Scene.sys.settings.active) ? level4Scene :
                            (level5Scene && level5Scene.sys.settings.active) ? level5Scene :
                            (level6Scene && level6Scene.sys.settings.active) ? level6Scene :
-                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene : null;
+                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene :
+                           (level8Scene && level8Scene.sys.settings.active) ? level8Scene : null;
         
         if (activeScene && activeScene.adjustZoom) {
             activeScene.adjustZoom(0.1);
@@ -561,6 +598,7 @@ function setupEventHandlers() {
         const level5Scene = game.scene.getScene('Level5Scene');
         const level6Scene = game.scene.getScene('Level6Scene');
         const level7Scene = game.scene.getScene('Level7Scene');
+        const level8Scene = game.scene.getScene('Level8Scene');
         
         const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
                            (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
@@ -568,7 +606,8 @@ function setupEventHandlers() {
                            (level4Scene && level4Scene.sys.settings.active) ? level4Scene :
                            (level5Scene && level5Scene.sys.settings.active) ? level5Scene :
                            (level6Scene && level6Scene.sys.settings.active) ? level6Scene :
-                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene : null;
+                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene :
+                           (level8Scene && level8Scene.sys.settings.active) ? level8Scene : null;
         
         if (activeScene && activeScene.adjustZoom) {
             activeScene.adjustZoom(-0.1);
@@ -588,6 +627,7 @@ function setupEventHandlers() {
         const level5Scene = game.scene.getScene('Level5Scene');
         const level6Scene = game.scene.getScene('Level6Scene');
         const level7Scene = game.scene.getScene('Level7Scene');
+        const level8Scene = game.scene.getScene('Level8Scene');
         
         const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
                            (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
@@ -595,7 +635,8 @@ function setupEventHandlers() {
                            (level4Scene && level4Scene.sys.settings.active) ? level4Scene :
                            (level5Scene && level5Scene.sys.settings.active) ? level5Scene :
                            (level6Scene && level6Scene.sys.settings.active) ? level6Scene :
-                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene : null;
+                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene :
+                           (level8Scene && level8Scene.sys.settings.active) ? level8Scene : null;
         
         if (activeScene && activeScene.resetZoom) {
             activeScene.resetZoom();
