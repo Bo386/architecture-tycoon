@@ -1,25 +1,26 @@
 /**
- * Level 6 Scene - Load Balancer Introduction
+ * Level 7 Scene - CDN Introduction
  * 
- * This scene implements the sixth level of the game, which teaches the concept
- * of load balancing by introducing a load balancer between users and app servers.
+ * This scene implements the seventh level of the game, which teaches the concept
+ * of Content Delivery Network (CDN) by introducing a CDN layer between users and load balancer.
  * 
  * Level Objectives:
- * - Process 1400 requests total
+ * - Process 1600 requests total
  * - Maintain error rate below 1%
- * - Learn how load balancing distributes traffic intelligently
+ * - Learn how CDN reduces load on backend infrastructure
  * 
  * Architecture:
  * - 3 User nodes (generate requests)
+ * - 1 CDN Server (optional, can be added by player)
+ * - 1 Load Balancer (distribute traffic)
  * - 2 App Servers (process business logic)
  * - 1 Cache Server (cache layer)
  * - 1 Database Server (data storage)
- * - Optional Load Balancer (can be added by player)
  * 
  * Key Concepts Taught:
- * - Load balancing distributes requests based on server load
- * - Prevents hotspots and maximizes resource utilization
- * - Critical for horizontal scaling
+ * - CDN reduces latency with edge caching
+ * - CDN offloads traffic from backend infrastructure
+ * - CDN is especially effective for static content and read requests
  */
 
 import { CONFIG, GameState, resetGameState } from '../config.js';
@@ -27,9 +28,9 @@ import { ServerNode } from '../objects/ServerNode.js';
 import { drawDualLines } from '../utils/animations.js';
 import { updateUI } from '../utils/uiManager.js';
 
-export class Level6Scene extends Phaser.Scene {
+export class Level7Scene extends Phaser.Scene {
     constructor() {
-        super({ key: 'Level6Scene' });
+        super({ key: 'Level7Scene' });
     }
 
     create() {
@@ -43,33 +44,34 @@ export class Level6Scene extends Phaser.Scene {
         
         // Update Header
         const header = document.querySelector('#header h1');
-        if (header) header.textContent = 'Level 6: Load Balancer';
+        if (header) header.textContent = 'Level 7: CDN Layer';
         
         // Update Objectives
         const objectivesList = document.querySelector('.objectives-list');
         if (objectivesList) {
             objectivesList.innerHTML = `
-                <li>Complete ${CONFIG.level6Target} requests</li>
+                <li>Complete ${CONFIG.level7Target} requests</li>
                 <li>Maintain error rate < ${CONFIG.maxErrorRate}%</li>
-                <li>Add a Load Balancer to distribute traffic</li>
+                <li>Add a CDN to reduce backend load</li>
             `;
         }
         
         // Reset Game State
-        resetGameState(6);
+        resetGameState(7);
         
         // Initialize Scene State
         this.trafficTimer = null;
         this.difficultyTimer = null;
-        this.currentTrafficDelay = CONFIG.level6.initialTrafficDelay;
-        this.packetsPerWave = CONFIG.level6.initialPacketsPerWave;
-        this.hasLoadBalancer = false;
+        this.currentTrafficDelay = CONFIG.level7.initialTrafficDelay;
+        this.packetsPerWave = CONFIG.level7.initialPacketsPerWave;
+        this.hasCDN = false;
+        this.hasLoadBalancer = true; // Load balancer is already present
 
         updateUI();
         this.setupBackground();
         this.createNodes();
         this.setupZoom();
-        this.setupLoadBalancerButton();
+        this.setupCDNButton();
     }
 
     setupZoom() {
@@ -119,7 +121,7 @@ export class Level6Scene extends Phaser.Scene {
         const h = this.cameras.main.height;
 
         // Create User Nodes (left side)
-        const userConfig = CONFIG.level6.servers.user;
+        const userConfig = CONFIG.level7.servers.user;
         GameState.nodes['User1'] = new ServerNode(
             this, w * 0.15, h/2 - 100,
             'User A', 'user', userConfig.capacity, userConfig.speed
@@ -133,72 +135,79 @@ export class Level6Scene extends Phaser.Scene {
             'User C', 'user', userConfig.capacity, userConfig.speed
         );
         
+        // Create Load Balancer (already present)
+        const lbConfig = CONFIG.level7.servers.loadbalancer;
+        GameState.nodes['LoadBalancer1'] = new ServerNode(
+            this, w * 0.33, h/2,
+            'Load Balancer', 'loadbalancer', lbConfig.capacity, lbConfig.speed
+        );
+        
         // Create 2 Application Servers (center-left, stacked vertically)
-        const appConfig = CONFIG.level6.servers.app;
+        const appConfig = CONFIG.level7.servers.app;
         GameState.nodes['App1'] = new ServerNode(
-            this, w * 0.40, h/2 - 60,
+            this, w * 0.50, h/2 - 60,
             'App Server 1', 'app', appConfig.capacity, appConfig.speed
         );
         GameState.nodes['App2'] = new ServerNode(
-            this, w * 0.40, h/2 + 60,
+            this, w * 0.50, h/2 + 60,
             'App Server 2', 'app', appConfig.capacity, appConfig.speed
         );
         
         // Create Cache Server (above app servers)
-        const cacheConfig = CONFIG.level6.servers.cache;
+        const cacheConfig = CONFIG.level7.servers.cache;
         GameState.nodes['Cache1'] = new ServerNode(
-            this, w * 0.60, h/2 - 180,
+            this, w * 0.70, h/2 - 180,
             'Cache', 'cache', cacheConfig.capacity, cacheConfig.speed
         );
         
         // Create Database Server (right side)
-        const dbConfig = CONFIG.level6.servers.database;
+        const dbConfig = CONFIG.level7.servers.database;
         GameState.nodes['Database1'] = new ServerNode(
-            this, w * 0.60, h/2,
+            this, w * 0.70, h/2,
             'Database', 'database', dbConfig.capacity, dbConfig.speed
         );
     }
 
-    setupLoadBalancerButton() {
+    setupCDNButton() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         
         // Create button background
-        this.lbButtonBg = this.add.rectangle(w * 0.27, h - 50, 250, 40, 0x9c27b0);
-        this.lbButtonBg.setStrokeStyle(2, 0xbd5dd1);
-        this.lbButtonBg.setInteractive({ useHandCursor: true });
+        this.cdnButtonBg = this.add.rectangle(w * 0.24, h - 50, 220, 40, 0x00bcd4);
+        this.cdnButtonBg.setStrokeStyle(2, 0x00e5ff);
+        this.cdnButtonBg.setInteractive({ useHandCursor: true });
         
         // Create button text
-        this.lbButtonText = this.add.text(w * 0.27, h - 50, '+ Add Load Balancer ($300)', {
+        this.cdnButtonText = this.add.text(w * 0.24, h - 50, '+ Add CDN ($400)', {
             fontSize: '16px',
             color: '#ffffff',
             fontStyle: 'bold'
         }).setOrigin(0.5);
         
         // Add hover effect
-        this.lbButtonBg.on('pointerover', () => {
-            this.lbButtonBg.setFillStyle(0xbd5dd1);
+        this.cdnButtonBg.on('pointerover', () => {
+            this.cdnButtonBg.setFillStyle(0x00e5ff);
         });
         
-        this.lbButtonBg.on('pointerout', () => {
-            if (!this.hasLoadBalancer) {
-                this.lbButtonBg.setFillStyle(0x9c27b0);
+        this.cdnButtonBg.on('pointerout', () => {
+            if (!this.hasCDN) {
+                this.cdnButtonBg.setFillStyle(0x00bcd4);
             }
         });
         
         // Add click handler
-        this.lbButtonBg.on('pointerdown', () => {
-            this.addLoadBalancer();
+        this.cdnButtonBg.on('pointerdown', () => {
+            this.addCDN();
         });
     }
 
-    addLoadBalancer() {
-        if (this.hasLoadBalancer) {
-            alert('Load Balancer already added!');
+    addCDN() {
+        if (this.hasCDN) {
+            alert('CDN already added!');
             return;
         }
 
-        const cost = 300;
+        const cost = 400;
         if (GameState.money < cost) {
             alert(`Not enough money! Need $${cost}, have $${GameState.money}`);
             return;
@@ -206,28 +215,24 @@ export class Level6Scene extends Phaser.Scene {
 
         // Deduct cost
         GameState.money -= cost;
-        this.hasLoadBalancer = true;
+        this.hasCDN = true;
 
-        // Create Load Balancer node between users and app servers
+        // Create CDN node between users and load balancer
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         
-        const lbConfig = CONFIG.level6.servers.loadbalancer;
-        GameState.nodes['LoadBalancer1'] = new ServerNode(
-            this, w * 0.27, h/2,
-            'Load Balancer', 'loadbalancer', lbConfig.capacity, lbConfig.speed
+        const cdnConfig = CONFIG.level7.servers.cdn;
+        GameState.nodes['CDN1'] = new ServerNode(
+            this, w * 0.24, h/2,
+            'CDN', 'cdn', cdnConfig.capacity, cdnConfig.speed
         );
 
-        // Disable the button
-        const lbButton = document.getElementById('btn-add-loadbalancer');
-        if (lbButton) {
-            lbButton.disabled = true;
-            lbButton.innerHTML = '✓ Load Balancer Added';
-            lbButton.style.backgroundColor = '#666';
-        }
+        // Update button appearance
+        this.cdnButtonBg.setFillStyle(0x666666);
+        this.cdnButtonText.setText('✓ CDN Added');
 
         updateUI();
-        this.showDifficultyToast('Load Balancer added! Traffic will be distributed intelligently.');
+        this.showDifficultyToast('CDN added! Static content will be served from the edge.');
     }
 
     startSimulation() {
@@ -241,7 +246,7 @@ export class Level6Scene extends Phaser.Scene {
         this.scheduleNextWave();
         
         this.difficultyTimer = this.time.addEvent({
-            delay: CONFIG.level6.difficultyInterval,
+            delay: CONFIG.level7.difficultyInterval,
             callback: () => this.increaseDifficulty(),
             loop: true
         });
@@ -286,7 +291,7 @@ export class Level6Scene extends Phaser.Scene {
         GameState.difficultyLevel++;
         
         const stageName = `stage${GameState.difficultyLevel}`;
-        const stage = CONFIG.level6.difficulty[stageName];
+        const stage = CONFIG.level7.difficulty[stageName];
         
         if (!stage) {
             this.showDifficultyToast("Maximum load reached");
@@ -309,24 +314,29 @@ export class Level6Scene extends Phaser.Scene {
     update() {
         this.graphics.clear();
         
+        const cdn = GameState.nodes['CDN1'];
         const lb = GameState.nodes['LoadBalancer1'];
         const app1 = GameState.nodes['App1'];
         const app2 = GameState.nodes['App2'];
         const cache = GameState.nodes['Cache1'];
         const db = GameState.nodes['Database1'];
         
-        // Draw User → LoadBalancer or User → App connections
+        // Draw User → CDN or User → LoadBalancer connections
         ['User1', 'User2', 'User3'].forEach(uid => {
             const user = GameState.nodes[uid];
-            if (lb) {
-                // If load balancer exists, users connect to it
+            if (cdn) {
+                // If CDN exists, users connect to it
+                drawDualLines(this.graphics, user, cdn);
+            } else if (lb) {
+                // Otherwise, users connect directly to load balancer
                 drawDualLines(this.graphics, user, lb);
-            } else {
-                // Otherwise, users connect directly to both app servers
-                if (app1) drawDualLines(this.graphics, user, app1);
-                if (app2) drawDualLines(this.graphics, user, app2);
             }
         });
+        
+        // Draw CDN → LoadBalancer connection
+        if (cdn && lb) {
+            drawDualLines(this.graphics, cdn, lb);
+        }
         
         // Draw LoadBalancer → App connections
         if (lb) {
@@ -382,8 +392,8 @@ export class Level6Scene extends Phaser.Scene {
         if (this.trafficTimer) this.trafficTimer.remove();
         if (this.difficultyTimer) this.difficultyTimer.remove();
 
-        GameState.total = CONFIG.level6Target;
-        GameState.success = CONFIG.level6Target;
+        GameState.total = CONFIG.level7Target;
+        GameState.success = CONFIG.level7Target;
         GameState.errors = 0;
         GameState.isRunning = false;
         GameState.isGameOver = true;
@@ -399,35 +409,32 @@ export class Level6Scene extends Phaser.Scene {
         modal.style.display = 'block';
         modal.classList.add('show');
 
-        title.innerText = "Level 6 Complete!";
+        title.innerText = "Level 7 Complete!";
         body.innerHTML = `
             <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
-            <p>You successfully handled ${CONFIG.level6Target} requests with load balancing!</p>
+            <p>You successfully handled ${CONFIG.level7Target} requests with CDN!</p>
             
-            <div class="concept-box" style="background: rgba(156, 39, 176, 0.1); border: 1px solid #9c27b0; border-radius: 8px; padding: 15px; margin-top: 15px;">
-                <strong>Architect's Notes: Load Balancer</strong><br/>
-                Adding a load balancer provides critical benefits:
+            <div class="concept-box" style="background: rgba(0, 188, 212, 0.1); border: 1px solid #00bcd4; border-radius: 8px; padding: 15px; margin-top: 15px;">
+                <strong>Architect's Notes: Content Delivery Network (CDN)</strong><br/>
+                Adding a CDN layer provides significant benefits:
                 <br/><br/>
                 <ul style="text-align: left; margin-left: 20px;">
-                    <li>✅ Intelligently distributes traffic based on server load</li>
-                    <li>✅ Prevents hotspots and overload on individual servers</li>
-                    <li>✅ Maximizes resource utilization across all servers</li>
-                    <li>✅ Essential for horizontal scaling with multiple servers</li>
-                    <li>❌ Single point of failure (needs redundancy in production)</li>
-                    <li>❌ Additional latency (small overhead)</li>
+                    <li>✅ Dramatically reduces latency with edge caching (5ms vs 600ms)</li>
+                    <li>✅ Offloads 80% of read traffic from backend infrastructure</li>
+                    <li>✅ Improved user experience with faster page loads</li>
+                    <li>✅ Reduced bandwidth costs on origin servers</li>
+                    <li>❌ Additional service costs</li>
+                    <li>❌ Cache invalidation complexity</li>
+                    <li>❌ Not suitable for dynamic or personalized content</li>
                 </ul>
                 <br/>
-                <strong>Key Insight:</strong> Load balancers are the traffic directors of modern architectures. By monitoring server health and capacity, they ensure requests go to the server best equipped to handle them, preventing individual servers from becoming bottlenecks.
+                <strong>Key Insight:</strong> CDNs are essential for modern web applications. By caching content at edge locations close to users, CDNs provide the fastest possible response times while dramatically reducing load on your backend infrastructure.
             </div>
         `;
         
-        // Show next button to go to Level 7
-        btnNext.style.display = 'inline-block';
-        btnNext.onclick = () => {
-            this.scene.start('Level7Scene');
-        };
+        // This is the last level - hide next button and show level selector option
+        btnNext.style.display = 'none';
         
-        // Also keep the retry button for replaying
         const btnRetry = document.getElementById('btn-modal-retry');
         if (btnRetry) {
             btnRetry.textContent = 'Select Another Level';
@@ -435,12 +442,9 @@ export class Level6Scene extends Phaser.Scene {
             btnRetry.onclick = () => {
                 modal.style.display = 'none';
                 modal.classList.remove('show');
-                // Show level selector dropdown and focus it
                 const levelSelector = document.getElementById('level-selector');
                 if (levelSelector) {
-                    // Scroll to make level selector visible
                     levelSelector.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Highlight the level selector briefly
                     levelSelector.style.border = '3px solid #ffd700';
                     levelSelector.style.boxShadow = '0 0 20px rgba(255, 215, 0, 0.5)';
                     setTimeout(() => {

@@ -108,6 +108,13 @@ export class ServerNode extends Phaser.GameObjects.Container {
             this.bg.width = 80;  // Approximate width
             this.bg.height = 80;
             this.bg.isGraphics = true;
+        } else if (this.type === 'cdn') {
+            // CDN: Star (represents edge/distributed network)
+            this.bg = this.scene.add.graphics();
+            this.drawStar(this.bg, 0, 0, 5, 35, 18);
+            this.bg.width = 70;  // Approximate width
+            this.bg.height = 70;
+            this.bg.isGraphics = true;
         } else {
             // App Server: Rectangle (standard server shape)
             this.bg = this.scene.add.rectangle(0, 0, w, h, CONFIG.colors.node);
@@ -274,6 +281,43 @@ export class ServerNode extends Phaser.GameObjects.Container {
     }
 
     /**
+     * Draw Star Shape (for CDN nodes)
+     * 
+     * @param {Phaser.GameObjects.Graphics} graphics - Graphics object to draw on
+     * @param {number} x - Center X position
+     * @param {number} y - Center Y position
+     * @param {number} points - Number of star points
+     * @param {number} outerRadius - Outer radius (tip of star)
+     * @param {number} innerRadius - Inner radius (between points)
+     * @param {number} borderColor - Border color (optional)
+     * @param {number} strokeWidth - Stroke width (optional)
+     */
+    drawStar(graphics, x, y, points, outerRadius, innerRadius, borderColor, strokeWidth) {
+        graphics.fillStyle(CONFIG.colors.node, 1);
+        graphics.lineStyle(strokeWidth || 2, borderColor || CONFIG.colors.nodeBorder);
+        
+        graphics.beginPath();
+        
+        // Draw star with alternating outer and inner points
+        for (let i = 0; i < points * 2; i++) {
+            const angle = (Math.PI / points) * i - Math.PI / 2; // Start from top
+            const radius = i % 2 === 0 ? outerRadius : innerRadius;
+            const px = x + radius * Math.cos(angle);
+            const py = y + radius * Math.sin(angle);
+            
+            if (i === 0) {
+                graphics.moveTo(px, py);
+            } else {
+                graphics.lineTo(px, py);
+            }
+        }
+        
+        graphics.closePath();
+        graphics.fillPath();
+        graphics.strokePath();
+    }
+
+    /**
      * Create User-Specific Statistics Display
      * 
      * For 'user' nodes, displays:
@@ -392,6 +436,8 @@ export class ServerNode extends Phaser.GameObjects.Container {
             this.drawDiamond(this.bg, 0, 0, w, h, borderColor, strokeWidth);
         } else if (this.type === 'loadbalancer') {
             this.drawHexagon(this.bg, 0, 0, 40, borderColor, strokeWidth);
+        } else if (this.type === 'cdn') {
+            this.drawStar(this.bg, 0, 0, 5, 35, 18, borderColor, strokeWidth);
         }
     }
 
@@ -783,26 +829,93 @@ export class ServerNode extends Phaser.GameObjects.Container {
                 packet.destroy();
             }
         }
-        // User sends request to load balancer or app
-        else if (this.type === 'user' && !packet.isResponse) {
-            // Check if load balancer exists
-            const loadBalancer = GameState.nodes['LoadBalancer1'];
+        // CDN receives request from user - check for hit/miss
+        else if (this.type === 'cdn' && !packet.isResponse) {
+            const cdnConfig = CONFIG.level7?.servers?.cdn;
+            const hitRate = cdnConfig?.hitRate || 0.8;
             
-            if (loadBalancer && loadBalancer.active) {
-                // Route through load balancer
-                sendPacketAnim(this.scene, packet, loadBalancer, this);
+            // Write requests always bypass CDN (go to backend)
+            if (packet.isWrite) {
+                const loadBalancer = GameState.nodes['LoadBalancer1'];
+                if (loadBalancer && loadBalancer.active) {
+                    sendPacketAnim(this.scene, packet, loadBalancer, this);
+                } else {
+                    packet.destroy();
+                }
             } else {
-                // Find all available app servers
-                const appServers = Object.keys(GameState.nodes)
-                    .filter(key => key.startsWith('App'))
-                    .map(key => GameState.nodes[key])
-                    .filter(app => app && app.active);
+                // Read request - check for CDN hit
+                const isCDNHit = Math.random() < hitRate;
                 
-                if (appServers.length > 0) {
-                    // Use random selection without load balancer
-                    const randomIndex = Math.floor(Math.random() * appServers.length);
-                    const target = appServers[randomIndex];
-                    sendPacketAnim(this.scene, packet, target, this);
+                if (isCDNHit) {
+                    // CDN HIT - return directly to user
+                    packet.isResponse = true;
+                    packet.isCDNHit = true;
+                    
+                    // Change packet color to response (gold)
+                    if (packet.setFillStyle) {
+                        packet.setFillStyle(CONFIG.colors.packetRes);
+                    } else if (packet.setTint) {
+                        packet.setTint(CONFIG.colors.packetRes);
+                    }
+                    
+                    // Show CDN hit feedback
+                    this.showFloatText('HIT', '#00ff00');
+                    
+                    // Return to user
+                    if (packet.sourceNode && packet.sourceNode.active) {
+                        sendPacketAnim(this.scene, packet, packet.sourceNode, this);
+                    } else {
+                        packet.destroy();
+                    }
+                } else {
+                    // CDN MISS - forward to backend
+                    this.showFloatText('MISS', '#ff6b35');
+                    
+                    const loadBalancer = GameState.nodes['LoadBalancer1'];
+                    if (loadBalancer && loadBalancer.active) {
+                        sendPacketAnim(this.scene, packet, loadBalancer, this);
+                    } else {
+                        packet.destroy();
+                    }
+                }
+            }
+        }
+        // CDN receives response from backend - forward to user
+        else if (this.type === 'cdn' && packet.isResponse) {
+            if (packet.sourceNode && packet.sourceNode.active) {
+                sendPacketAnim(this.scene, packet, packet.sourceNode, this);
+            } else {
+                packet.destroy();
+            }
+        }
+        // User sends request to CDN, load balancer, or app
+        else if (this.type === 'user' && !packet.isResponse) {
+            // Check if CDN exists (Level 7)
+            const cdn = GameState.nodes['CDN1'];
+            
+            if (cdn && cdn.active) {
+                // Route through CDN
+                sendPacketAnim(this.scene, packet, cdn, this);
+            } else {
+                // Check if load balancer exists
+                const loadBalancer = GameState.nodes['LoadBalancer1'];
+                
+                if (loadBalancer && loadBalancer.active) {
+                    // Route through load balancer
+                    sendPacketAnim(this.scene, packet, loadBalancer, this);
+                } else {
+                    // Find all available app servers
+                    const appServers = Object.keys(GameState.nodes)
+                        .filter(key => key.startsWith('App'))
+                        .map(key => GameState.nodes[key])
+                        .filter(app => app && app.active);
+                    
+                    if (appServers.length > 0) {
+                        // Use random selection without load balancer
+                        const randomIndex = Math.floor(Math.random() * appServers.length);
+                        const target = appServers[randomIndex];
+                        sendPacketAnim(this.scene, packet, target, this);
+                    }
                 }
             }
         }
