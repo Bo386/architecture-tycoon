@@ -23,7 +23,7 @@
  */
 
 import { CONFIG, GameState } from '../config.js';
-import { ServerNode } from '../objects/ServerNode.js';
+import { UserNode, AppServerNode, CacheNode, DatabaseNode, LoadBalancerNode } from '../objects/nodes.js';
 import { drawDualLines } from '../utils/animations.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
 
@@ -84,40 +84,33 @@ export class Level6Scene extends BaseLevelScene {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
 
-        // Create User Nodes
-        GameState.nodes['User1'] = new ServerNode(
-            this, w * 0.15, h/2 - 100,
-            'User A', 'user', 999, 10
+        // Create User Nodes (using new UserNode class)
+        GameState.nodes['User1'] = new UserNode(
+            this, w * 0.15, h/2 - 100, 'User A'
         );
-        GameState.nodes['User2'] = new ServerNode(
-            this, w * 0.15, h/2,
-            'User B', 'user', 999, 10
+        GameState.nodes['User2'] = new UserNode(
+            this, w * 0.15, h/2, 'User B'
         );
-        GameState.nodes['User3'] = new ServerNode(
-            this, w * 0.15, h/2 + 100,
-            'User C', 'user', 999, 10
+        GameState.nodes['User3'] = new UserNode(
+            this, w * 0.15, h/2 + 100, 'User C'
         );
         
-        // Create 2 Application Servers
-        GameState.nodes['App1'] = new ServerNode(
-            this, w * 0.40, h/2 - 60,
-            'App Server 1', 'app', 5, 800
+        // Create 2 Application Servers (using new AppServerNode class)
+        GameState.nodes['App1'] = new AppServerNode(
+            this, w * 0.40, h/2 - 60, 'App Server 1', 5, 800
         );
-        GameState.nodes['App2'] = new ServerNode(
-            this, w * 0.40, h/2 + 60,
-            'App Server 2', 'app', 5, 800
+        GameState.nodes['App2'] = new AppServerNode(
+            this, w * 0.40, h/2 + 60, 'App Server 2', 5, 800
         );
         
-        // Create Cache Server
-        GameState.nodes['Cache1'] = new ServerNode(
-            this, w * 0.60, h/2 - 180,
-            'Cache', 'cache', 20, 50
+        // Create Cache Server (using new CacheNode class)
+        GameState.nodes['Cache1'] = new CacheNode(
+            this, w * 0.60, h/2 - 180, 'Cache', 20, 50
         );
         
-        // Create Database Server
-        GameState.nodes['Database1'] = new ServerNode(
-            this, w * 0.60, h/2,
-            'Database', 'database', 3, 1200
+        // Create Database Server (using new DatabaseNode class)
+        GameState.nodes['Database1'] = new DatabaseNode(
+            this, w * 0.60, h/2, 'Database', 3, 1200
         );
     }
 
@@ -168,9 +161,9 @@ export class Level6Scene extends BaseLevelScene {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         
-        GameState.nodes['LoadBalancer1'] = new ServerNode(
-            this, w * 0.27, h/2,
-            'Load Balancer', 'loadbalancer', 30, 100
+        // Create Load Balancer (using new LoadBalancerNode class)
+        GameState.nodes['LoadBalancer1'] = new LoadBalancerNode(
+            this, w * 0.27, h/2, 'Load Balancer', 30, 100
         );
 
         this.lbButtonText.setText('✓ Load Balancer Added');

@@ -21,7 +21,7 @@
  */
 
 import { CONFIG, GameState } from '../config.js';
-import { ServerNode } from '../objects/ServerNode.js';
+import { UserNode, AppServerNode, DatabaseNode } from '../objects/nodes.js';
 import { drawDualLines } from '../utils/animations.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
 
@@ -97,30 +97,25 @@ export class Level3Scene extends BaseLevelScene {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
 
-        // Create User Nodes
-        GameState.nodes['User1'] = new ServerNode(
-            this, w * 0.15, h/2 - 100,
-            'User A', 'user', 999, 10
+        // Create User Nodes (using new UserNode class)
+        GameState.nodes['User1'] = new UserNode(
+            this, w * 0.15, h/2 - 100, 'User A'
         );
-        GameState.nodes['User2'] = new ServerNode(
-            this, w * 0.15, h/2,
-            'User B', 'user', 999, 10
+        GameState.nodes['User2'] = new UserNode(
+            this, w * 0.15, h/2, 'User B'
         );
-        GameState.nodes['User3'] = new ServerNode(
-            this, w * 0.15, h/2 + 100,
-            'User C', 'user', 999, 10
+        GameState.nodes['User3'] = new UserNode(
+            this, w * 0.15, h/2 + 100, 'User C'
         );
         
-        // Create Application Server
-        GameState.nodes['App'] = new ServerNode(
-            this, w * 0.5, h/2,
-            'App Server', 'app', 5, 800
+        // Create Application Server (using new AppServerNode class)
+        GameState.nodes['App'] = new AppServerNode(
+            this, w * 0.5, h/2, 'App Server', 5, 800
         );
         
-        // Create Initial Database Server
-        GameState.nodes['Database1'] = new ServerNode(
-            this, w * 0.8, h/2,
-            'Database 1', 'database', 3, 1200
+        // Create Initial Database Server (using new DatabaseNode class)
+        GameState.nodes['Database1'] = new DatabaseNode(
+            this, w * 0.8, h/2, 'Database 1', 3, 1200
         );
     }
 
@@ -196,11 +191,11 @@ export class Level3Scene extends BaseLevelScene {
             }
         }
 
-        // Create new database
+        // Create new database (using new DatabaseNode class)
         const newY = startY + (this.databaseCount - 1) * spacing;
-        GameState.nodes['Database' + this.databaseCount] = new ServerNode(
+        GameState.nodes['Database' + this.databaseCount] = new DatabaseNode(
             this, w * 0.8, newY,
-            'Database ' + this.databaseCount, 'database', 3, 1200
+            'Database ' + this.databaseCount, 3, 1200
         );
 
         this.updateUI();

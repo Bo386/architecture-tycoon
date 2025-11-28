@@ -22,7 +22,7 @@
  */
 
 import { CONFIG, GameState } from '../config.js';
-import { ServerNode } from '../objects/ServerNode.js';
+import { UserNode, AppServerNode } from '../objects/nodes.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
 
 export class Level1Scene extends BaseLevelScene {
@@ -95,24 +95,20 @@ export class Level1Scene extends BaseLevelScene {
     createNodes() {
         const h = this.cameras.main.height;
 
-        // Create User Nodes
-        GameState.nodes['User1'] = new ServerNode(
-            this, 150, h/2 - 100,
-            'User A', 'user', 999, 10
+        // Create User Nodes (using new UserNode class)
+        GameState.nodes['User1'] = new UserNode(
+            this, 150, h/2 - 100, 'User A'
         );
-        GameState.nodes['User2'] = new ServerNode(
-            this, 150, h/2,
-            'User B', 'user', 999, 10
+        GameState.nodes['User2'] = new UserNode(
+            this, 150, h/2, 'User B'
         );
-        GameState.nodes['User3'] = new ServerNode(
-            this, 150, h/2 + 100,
-            'User C', 'user', 999, 10
+        GameState.nodes['User3'] = new UserNode(
+            this, 150, h/2 + 100, 'User C'
         );
         
-        // Create Application Server
-        GameState.nodes['App'] = new ServerNode(
-            this, 550, h/2,
-            'App Server', 'app', 5, 800
+        // Create Application Server (using new AppServerNode class)
+        GameState.nodes['App'] = new AppServerNode(
+            this, 550, h/2, 'App Server', 5, 800
         );
     }
 }
