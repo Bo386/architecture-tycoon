@@ -23,6 +23,7 @@
  */
 
 import { CONFIG, GameState } from '../config.js';
+import { LAYOUT_CONFIG, ECONOMICS_CONFIG, UI_CONFIG } from '../config/index.js';
 import { UserNode, AppServerNode, CacheNode, DatabaseNode, LoadBalancerNode, CDNNode } from '../objects/nodes.js';
 import { drawDualLines } from '../utils/animations.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
@@ -59,42 +60,78 @@ export class Level7Scene extends BaseLevelScene {
     createNodes() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        const spacing = LAYOUT_CONFIG.spacing.vertical.medium;
+        const smallSpacing = LAYOUT_CONFIG.spacing.vertical.small;
+        const vertOffset = LAYOUT_CONFIG.spacing.vertical.extraLarge;
 
         // Create User Nodes (using new UserNode class)
-        GameState.nodes['User1'] = new UserNode(this, w * 0.15, h/2 - 100, 'User A');
+        GameState.nodes['User1'] = new UserNode(this, w * 0.15, h/2 - spacing, 'User A');
         GameState.nodes['User2'] = new UserNode(this, w * 0.15, h/2, 'User B');
-        GameState.nodes['User3'] = new UserNode(this, w * 0.15, h/2 + 100, 'User C');
+        GameState.nodes['User3'] = new UserNode(this, w * 0.15, h/2 + spacing, 'User C');
         
         // Create Load Balancer (using new LoadBalancerNode class)
-        GameState.nodes['LoadBalancer1'] = new LoadBalancerNode(this, w * 0.30, h/2, 'Load Balancer', 30, 100);
+        GameState.nodes['LoadBalancer1'] = new LoadBalancerNode(
+            this, w * 0.30, h/2, 'Load Balancer', 
+            ECONOMICS_CONFIG.initialValues.loadBalancerCapacity, 
+            ECONOMICS_CONFIG.initialValues.loadBalancerDelay
+        );
         
         // Create App Servers (using new AppServerNode class)
-        GameState.nodes['App1'] = new AppServerNode(this, w * 0.45, h/2 - 60, 'App Server 1', 5, 800);
-        GameState.nodes['App2'] = new AppServerNode(this, w * 0.45, h/2 + 60, 'App Server 2', 5, 800);
+        GameState.nodes['App1'] = new AppServerNode(
+            this, w * 0.45, h/2 - smallSpacing, 'App Server 1', 
+            ECONOMICS_CONFIG.initialValues.appServerCapacity, 
+            ECONOMICS_CONFIG.initialValues.processingDelay
+        );
+        GameState.nodes['App2'] = new AppServerNode(
+            this, w * 0.45, h/2 + smallSpacing, 'App Server 2', 
+            ECONOMICS_CONFIG.initialValues.appServerCapacity, 
+            ECONOMICS_CONFIG.initialValues.processingDelay
+        );
         
         // Create Cache (using new CacheNode class)
-        GameState.nodes['Cache1'] = new CacheNode(this, w * 0.65, h/2 - 180, 'Cache', 20, 50);
+        GameState.nodes['Cache1'] = new CacheNode(
+            this, w * 0.65, h/2 - vertOffset, 'Cache', 
+            ECONOMICS_CONFIG.initialValues.cacheCapacity, 
+            ECONOMICS_CONFIG.initialValues.cacheDelay
+        );
         
         // Create Database (using new DatabaseNode class)
-        GameState.nodes['Database1'] = new DatabaseNode(this, w * 0.65, h/2, 'Database', 3, 1200);
+        GameState.nodes['Database1'] = new DatabaseNode(
+            this, w * 0.65, h/2, 'Database', 
+            ECONOMICS_CONFIG.initialValues.databaseCapacity, 
+            ECONOMICS_CONFIG.initialValues.databaseDelay
+        );
     }
 
     setupCDNButton() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        const cost = ECONOMICS_CONFIG.purchases.cdn;
         
-        this.cdnButtonBg = this.add.rectangle(w * 0.15, h - 50, 200, 40, 0x4caf50);
-        this.cdnButtonBg.setStrokeStyle(2, 0x66bb6a);
+        this.cdnButtonBg = this.add.rectangle(
+            w * 0.15, h - 50, 
+            UI_CONFIG.buttons.medium.width, 
+            UI_CONFIG.buttons.medium.height, 
+            UI_CONFIG.buttonColors.success
+        );
+        this.cdnButtonBg.setStrokeStyle(2, UI_CONFIG.buttonColors.successHover);
         this.cdnButtonBg.setInteractive({ useHandCursor: true });
         
-        this.cdnButtonText = this.add.text(w * 0.15, h - 50, '+ Add CDN ($400)', {
-            fontSize: '16px',
-            color: '#ffffff',
-            fontStyle: 'bold'
-        }).setOrigin(0.5);
+        this.cdnButtonText = this.add.text(
+            w * 0.15, h - 50, 
+            `+ Add CDN ($${cost})`, 
+            {
+                fontSize: UI_CONFIG.fonts.button,
+                color: UI_CONFIG.textColors.light,
+                fontStyle: 'bold',
+                fontFamily: UI_CONFIG.fontFamily
+            }
+        ).setOrigin(0.5);
         
-        this.cdnButtonBg.on('pointerover', () => this.cdnButtonBg.setFillStyle(0x66bb6a));
-        this.cdnButtonBg.on('pointerout', () => { if (!this.hasCDN) this.cdnButtonBg.setFillStyle(0x4caf50); });
+        this.cdnButtonBg.on('pointerover', () => this.cdnButtonBg.setFillStyle(UI_CONFIG.buttonColors.successHover));
+        this.cdnButtonBg.on('pointerout', () => { 
+            if (!this.hasCDN) this.cdnButtonBg.setFillStyle(UI_CONFIG.buttonColors.success); 
+        });
         this.cdnButtonBg.on('pointerdown', () => this.addCDN());
     }
 
@@ -104,7 +141,7 @@ export class Level7Scene extends BaseLevelScene {
             return;
         }
 
-        const cost = 400;
+        const cost = ECONOMICS_CONFIG.purchases.cdn;
         if (GameState.money < cost) {
             this.showToast(`Not enough money! Need $${cost}`);
             return;
@@ -117,10 +154,14 @@ export class Level7Scene extends BaseLevelScene {
         const h = this.cameras.main.height;
         
         // Create CDN (using new CDNNode class)
-        GameState.nodes['CDN1'] = new CDNNode(this, w * 0.15, h/2 - 200, 'CDN', 50, 30);
+        GameState.nodes['CDN1'] = new CDNNode(
+            this, w * 0.15, h/2 - LAYOUT_CONFIG.spacing.vertical.extraLarge * 1.1, 'CDN', 
+            ECONOMICS_CONFIG.initialValues.cdnCapacity, 
+            ECONOMICS_CONFIG.initialValues.cdnDelay
+        );
 
         this.cdnButtonText.setText('✓ CDN Added');
-        this.cdnButtonBg.setFillStyle(0x666666);
+        this.cdnButtonBg.setFillStyle(UI_CONFIG.buttonColors.disabled);
         this.cdnButtonBg.disableInteractive();
 
         this.updateUI();
@@ -157,7 +198,7 @@ export class Level7Scene extends BaseLevelScene {
         let packet;
         
         if (isWrite) {
-            const size = 6;
+            const size = LAYOUT_CONFIG.packets.diamondSize;
             packet = this.add.graphics();
             packet.fillStyle(CONFIG.colors.packetReq, 1);
             packet.beginPath();
@@ -171,7 +212,11 @@ export class Level7Scene extends BaseLevelScene {
             packet.y = startNode.y;
             packet.isWrite = true;
         } else {
-            packet = this.add.circle(startNode.x, startNode.y, 5, CONFIG.colors.packetReq);
+            packet = this.add.circle(
+                startNode.x, startNode.y, 
+                LAYOUT_CONFIG.packets.circleRadius, 
+                CONFIG.colors.packetReq
+            );
             packet.isWrite = false;
         }
         

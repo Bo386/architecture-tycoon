@@ -22,6 +22,7 @@
  */
 
 import { CONFIG, GameState } from '../config.js';
+import { LAYOUT_CONFIG, ECONOMICS_CONFIG } from '../config/index.js';
 import { UserNode, AppServerNode, CacheNode, DatabaseNode } from '../objects/nodes.js';
 import { drawDualLines } from '../utils/animations.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
@@ -84,31 +85,39 @@ export class Level5Scene extends BaseLevelScene {
     createNodes() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        const spacing = LAYOUT_CONFIG.spacing.vertical.medium;
+        const vertOffset = LAYOUT_CONFIG.spacing.vertical.extraLarge;
 
         // Create User Nodes (using new UserNode class)
         GameState.nodes['User1'] = new UserNode(
-            this, w * 0.15, h/2 - 100, 'User A'
+            this, w * 0.15, h/2 - spacing, 'User A'
         );
         GameState.nodes['User2'] = new UserNode(
             this, w * 0.15, h/2, 'User B'
         );
         GameState.nodes['User3'] = new UserNode(
-            this, w * 0.15, h/2 + 100, 'User C'
+            this, w * 0.15, h/2 + spacing, 'User C'
         );
         
         // Create Application Server (using new AppServerNode class)
         GameState.nodes['App1'] = new AppServerNode(
-            this, w * 0.45, h/2, 'App Server', 5, 800
+            this, w * 0.45, h/2, 'App Server', 
+            ECONOMICS_CONFIG.initialValues.appServerCapacity, 
+            ECONOMICS_CONFIG.initialValues.processingDelay
         );
         
         // Create Cache Server (using new CacheNode class)
         GameState.nodes['Cache1'] = new CacheNode(
-            this, w * 0.45, h/2 - 180, 'Cache', 20, 50
+            this, w * 0.45, h/2 - vertOffset, 'Cache', 
+            ECONOMICS_CONFIG.initialValues.cacheCapacity, 
+            ECONOMICS_CONFIG.initialValues.cacheDelay
         );
         
         // Create Database Server (using new DatabaseNode class)
         GameState.nodes['Database1'] = new DatabaseNode(
-            this, w * 0.70, h/2, 'Database', 3, 1200
+            this, w * 0.70, h/2, 'Database', 
+            ECONOMICS_CONFIG.initialValues.databaseCapacity, 
+            ECONOMICS_CONFIG.initialValues.databaseDelay
         );
     }
 
@@ -153,7 +162,7 @@ export class Level5Scene extends BaseLevelScene {
         let packet;
         
         if (isWrite) {
-            const size = 6;
+            const size = LAYOUT_CONFIG.packets.diamondSize;
             packet = this.add.graphics();
             packet.fillStyle(CONFIG.colors.packetReq, 1);
             packet.beginPath();
@@ -168,7 +177,8 @@ export class Level5Scene extends BaseLevelScene {
             packet.isWrite = true;
         } else {
             packet = this.add.circle(
-                startNode.x, startNode.y, 5,
+                startNode.x, startNode.y, 
+                LAYOUT_CONFIG.packets.circleRadius,
                 CONFIG.colors.packetReq
             );
             packet.isWrite = false;

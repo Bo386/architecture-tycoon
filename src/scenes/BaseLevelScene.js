@@ -14,6 +14,7 @@
  */
 
 import { CONFIG, GameState, resetGameState } from '../config.js';
+import { LAYOUT_CONFIG, UI_CONFIG } from '../config/index.js';
 import { drawDualLines } from '../utils/animations.js';
 import { updateUI, checkGameEnd } from '../utils/uiManager.js';
 
@@ -340,7 +341,7 @@ export class BaseLevelScene extends Phaser.Scene {
         const toast = document.getElementById('difficulty-toast');
         toast.innerText = msg;
         toast.style.opacity = 1;
-        setTimeout(() => toast.style.opacity = 0, 3000);
+        setTimeout(() => toast.style.opacity = 0, UI_CONFIG.toast.displayDuration);
     }
 
     /**
@@ -404,7 +405,7 @@ export class BaseLevelScene extends Phaser.Scene {
         const packet = this.add.circle(
             startNode.x,
             startNode.y, 
-            5,
+            LAYOUT_CONFIG.packets.circleRadius,
             isWrite ? CONFIG.colors.packetWrite : CONFIG.colors.packetReq
         );
         

@@ -20,7 +20,7 @@
  * - Database replication/sharding concepts
  */
 
-import { CONFIG, GameState } from '../config.js';
+import { CONFIG, GameState, UI_CONFIG, LAYOUT_CONFIG, ECONOMICS_CONFIG } from '../config/index.js';
 import { UserNode, AppServerNode, DatabaseNode } from '../objects/nodes.js';
 import { drawDualLines } from '../utils/animations.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
@@ -99,23 +99,23 @@ export class Level3Scene extends BaseLevelScene {
 
         // Create User Nodes (using new UserNode class)
         GameState.nodes['User1'] = new UserNode(
-            this, w * 0.15, h/2 - 100, 'User A'
+            this, w * LAYOUT_CONFIG.positions.leftMid, h/2 - LAYOUT_CONFIG.spacing.users, 'User A'
         );
         GameState.nodes['User2'] = new UserNode(
-            this, w * 0.15, h/2, 'User B'
+            this, w * LAYOUT_CONFIG.positions.leftMid, h/2, 'User B'
         );
         GameState.nodes['User3'] = new UserNode(
-            this, w * 0.15, h/2 + 100, 'User C'
+            this, w * LAYOUT_CONFIG.positions.leftMid, h/2 + LAYOUT_CONFIG.spacing.users, 'User C'
         );
         
         // Create Application Server (using new AppServerNode class)
         GameState.nodes['App'] = new AppServerNode(
-            this, w * 0.5, h/2, 'App Server', 5, 800
+            this, w * LAYOUT_CONFIG.positions.centerRight, h/2, 'App Server', 5, 800
         );
         
         // Create Initial Database Server (using new DatabaseNode class)
         GameState.nodes['Database1'] = new DatabaseNode(
-            this, w * 0.8, h/2, 'Database 1', 3, 1200
+            this, w * LAYOUT_CONFIG.positions.farRight, h/2, 'Database 1', 3, 1200
         );
     }
 
@@ -129,27 +129,30 @@ export class Level3Scene extends BaseLevelScene {
         const h = this.cameras.main.height;
 
         this.addDbButton = this.add.rectangle(
-            w * 0.8, h - 50,
-            180, 40,
-            0x4a90e2
+            w * LAYOUT_CONFIG.positions.farRight, 
+            h - LAYOUT_CONFIG.buttons.bottomOffset,
+            UI_CONFIG.buttons.small.width, 
+            UI_CONFIG.buttons.small.height,
+            UI_CONFIG.buttonColors.primary
         ).setInteractive({ useHandCursor: true });
 
         this.addDbButtonText = this.add.text(
-            w * 0.8, h - 50,
-            '+ Add Database ($300)',
+            w * LAYOUT_CONFIG.positions.farRight, 
+            h - LAYOUT_CONFIG.buttons.bottomOffset,
+            `+ Add Database ($${ECONOMICS_CONFIG.purchases.database})`,
             {
-                fontSize: '14px',
-                color: '#ffffff',
+                fontSize: UI_CONFIG.fonts.stat,
+                color: UI_CONFIG.textColors.white,
                 fontFamily: 'Arial'
             }
         ).setOrigin(0.5);
 
         this.addDbButton.on('pointerover', () => {
-            this.addDbButton.setFillStyle(0x5aa0f2);
+            this.addDbButton.setFillStyle(UI_CONFIG.buttonColors.primaryHighlight);
         });
 
         this.addDbButton.on('pointerout', () => {
-            this.addDbButton.setFillStyle(0x4a90e2);
+            this.addDbButton.setFillStyle(UI_CONFIG.buttonColors.primary);
         });
 
         this.addDbButton.on('pointerdown', () => {
@@ -163,14 +166,14 @@ export class Level3Scene extends BaseLevelScene {
      * Adds a new database server to the architecture if the player has enough money.
      */
     addDatabaseServer() {
-        const cost = 300;
+        const cost = ECONOMICS_CONFIG.purchases.database;
 
         if (GameState.money < cost) {
             this.showToast('Not enough money! Need $' + cost);
             return;
         }
 
-        if (this.databaseCount >= 5) {
+        if (this.databaseCount >= ECONOMICS_CONFIG.limits.databases) {
             this.showToast('Maximum database limit reached!');
             return;
         }
@@ -180,7 +183,7 @@ export class Level3Scene extends BaseLevelScene {
 
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        const spacing = 140;
+        const spacing = LAYOUT_CONFIG.spacing.nodes;
         const startY = h/2 - ((this.databaseCount - 1) * spacing) / 2;
 
         // Reposition existing databases
@@ -194,7 +197,7 @@ export class Level3Scene extends BaseLevelScene {
         // Create new database (using new DatabaseNode class)
         const newY = startY + (this.databaseCount - 1) * spacing;
         GameState.nodes['Database' + this.databaseCount] = new DatabaseNode(
-            this, w * 0.8, newY,
+            this, w * LAYOUT_CONFIG.positions.farRight, newY,
             'Database ' + this.databaseCount, 3, 1200
         );
 
@@ -237,7 +240,7 @@ export class Level3Scene extends BaseLevelScene {
         let packet;
         
         if (isWrite) {
-            const size = 6;
+            const size = LAYOUT_CONFIG.packets.diamondSize;
             packet = this.add.graphics();
             packet.fillStyle(CONFIG.colors.packetReq, 1);
             packet.beginPath();
@@ -252,7 +255,7 @@ export class Level3Scene extends BaseLevelScene {
             packet.isWrite = true;
         } else {
             packet = this.add.circle(
-                startNode.x, startNode.y, 5,
+                startNode.x, startNode.y, LAYOUT_CONFIG.packets.circleRadius,
                 CONFIG.colors.packetReq
             );
             packet.isWrite = false;

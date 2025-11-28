@@ -21,6 +21,7 @@
  */
 
 import { CONFIG, GameState } from '../config.js';
+import { LAYOUT_CONFIG, ECONOMICS_CONFIG, UI_CONFIG } from '../config/index.js';
 import { UserNode, AppServerNode, DatabaseNode } from '../objects/nodes.js';
 import { drawDualLines } from '../utils/animations.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
@@ -96,33 +97,40 @@ export class Level4Scene extends BaseLevelScene {
     createNodes() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        const spacing = LAYOUT_CONFIG.spacing.vertical.medium;
+        const largeSpacing = LAYOUT_CONFIG.spacing.vertical.large;
 
         // Create User Nodes (using new UserNode class)
         GameState.nodes['User1'] = new UserNode(
-            this, w * 0.15, h/2 - 100, 'User A'
+            this, w * 0.15, h/2 - spacing, 'User A'
         );
         GameState.nodes['User2'] = new UserNode(
             this, w * 0.15, h/2, 'User B'
         );
         GameState.nodes['User3'] = new UserNode(
-            this, w * 0.15, h/2 + 100, 'User C'
+            this, w * 0.15, h/2 + spacing, 'User C'
         );
         
         // Create Initial App Server (using new AppServerNode class)
         GameState.nodes['App1'] = new AppServerNode(
-            this, w * 0.5, h/2, 'App Server 1', 5, 800
+            this, w * 0.5, h/2, 'App Server 1', 
+            ECONOMICS_CONFIG.initialValues.appServerCapacity, 
+            ECONOMICS_CONFIG.initialValues.processingDelay
         );
         
         // Create Database Servers (2 fixed databases, using new DatabaseNode class)
-        const dbSpacing = 140;
-        const dbStartY = h/2 - dbSpacing/2;
+        const dbStartY = h/2 - largeSpacing/2;
         
         GameState.nodes['Database1'] = new DatabaseNode(
-            this, w * 0.8, dbStartY, 'Database 1', 3, 1200
+            this, w * 0.8, dbStartY, 'Database 1', 
+            ECONOMICS_CONFIG.initialValues.databaseCapacity, 
+            ECONOMICS_CONFIG.initialValues.databaseDelay
         );
         
         GameState.nodes['Database2'] = new DatabaseNode(
-            this, w * 0.8, dbStartY + dbSpacing, 'Database 2', 3, 1200
+            this, w * 0.8, dbStartY + largeSpacing, 'Database 2', 
+            ECONOMICS_CONFIG.initialValues.databaseCapacity, 
+            ECONOMICS_CONFIG.initialValues.databaseDelay
         );
     }
 
@@ -134,29 +142,31 @@ export class Level4Scene extends BaseLevelScene {
     createAddAppServerButton() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        const cost = ECONOMICS_CONFIG.purchases.appServer;
 
         this.addAppButton = this.add.rectangle(
             w * 0.5, h - 50,
-            200, 40,
-            0x4a90e2
+            UI_CONFIG.buttons.medium.width, 
+            UI_CONFIG.buttons.medium.height,
+            UI_CONFIG.buttonColors.primary
         ).setInteractive({ useHandCursor: true });
 
         this.addAppButtonText = this.add.text(
             w * 0.5, h - 50,
-            '+ Add App Server ($300)',
+            `+ Add App Server ($${cost})`,
             {
-                fontSize: '14px',
-                color: '#ffffff',
-                fontFamily: 'Arial'
+                fontSize: UI_CONFIG.fonts.button,
+                color: UI_CONFIG.textColors.light,
+                fontFamily: UI_CONFIG.fontFamily
             }
         ).setOrigin(0.5);
 
         this.addAppButton.on('pointerover', () => {
-            this.addAppButton.setFillStyle(0x5aa0f2);
+            this.addAppButton.setFillStyle(UI_CONFIG.buttonColors.hover);
         });
 
         this.addAppButton.on('pointerout', () => {
-            this.addAppButton.setFillStyle(0x4a90e2);
+            this.addAppButton.setFillStyle(UI_CONFIG.buttonColors.primary);
         });
 
         this.addAppButton.on('pointerdown', () => {
@@ -170,14 +180,15 @@ export class Level4Scene extends BaseLevelScene {
      * Adds a new app server to the architecture if the player has enough money.
      */
     addAppServer() {
-        const cost = 300;
+        const cost = ECONOMICS_CONFIG.purchases.appServer;
+        const maxServers = ECONOMICS_CONFIG.limits.appServers;
 
         if (GameState.money < cost) {
             this.showToast('Not enough money! Need $' + cost);
             return;
         }
 
-        if (this.appServerCount >= 5) {
+        if (this.appServerCount >= maxServers) {
             this.showToast('Maximum app server limit reached!');
             return;
         }
@@ -187,7 +198,7 @@ export class Level4Scene extends BaseLevelScene {
 
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        const spacing = 140;
+        const spacing = LAYOUT_CONFIG.spacing.vertical.large;
         const startY = h/2 - ((this.appServerCount - 1) * spacing) / 2;
 
         // Reposition existing app servers
@@ -202,7 +213,9 @@ export class Level4Scene extends BaseLevelScene {
         const newY = startY + (this.appServerCount - 1) * spacing;
         GameState.nodes['App' + this.appServerCount] = new AppServerNode(
             this, w * 0.5, newY,
-            'App Server ' + this.appServerCount, 5, 800
+            'App Server ' + this.appServerCount, 
+            ECONOMICS_CONFIG.initialValues.appServerCapacity, 
+            ECONOMICS_CONFIG.initialValues.processingDelay
         );
 
         this.updateUI();
@@ -255,7 +268,7 @@ export class Level4Scene extends BaseLevelScene {
         let packet;
         
         if (isWrite) {
-            const size = 6;
+            const size = LAYOUT_CONFIG.packets.diamondSize;
             packet = this.add.graphics();
             packet.fillStyle(CONFIG.colors.packetReq, 1);
             packet.beginPath();
@@ -270,7 +283,8 @@ export class Level4Scene extends BaseLevelScene {
             packet.isWrite = true;
         } else {
             packet = this.add.circle(
-                startNode.x, startNode.y, 5,
+                startNode.x, startNode.y, 
+                LAYOUT_CONFIG.packets.circleRadius,
                 CONFIG.colors.packetReq
             );
             packet.isWrite = false;
