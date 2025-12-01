@@ -94,9 +94,10 @@ export class Level1Scene extends BaseLevelScene {
      * - 1 App Server (center) that processes all requests
      */
     createNodes() {
+        const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        const userX = LAYOUT_CONFIG.positions.user.x;
-        const serverX = LAYOUT_CONFIG.positions.appServer.x;
+        const userX = w * LAYOUT_CONFIG.positions.user.x;
+        const serverX = w * LAYOUT_CONFIG.positions.appServer.x;
         const spacing = LAYOUT_CONFIG.spacing.vertical.medium;
 
         // Create User Nodes (using new UserNode class)

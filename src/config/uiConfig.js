@@ -57,6 +57,7 @@ export const UI_CONFIG = {
      */
     textColors: {
         white: '#fff',           // Primary text color
+        light: '#fff',           // Light text color (for dark backgrounds)
         muted: '#aaa',           // Secondary/muted text
         success: '#00ff00',      // Success messages
         error: '#ff4444',        // Error messages
