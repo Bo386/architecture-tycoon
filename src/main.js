@@ -13,6 +13,9 @@
 import { CONFIG, GameState } from './config.js';
 // Import UI update utilities
 import { updateUI } from './utils/uiManager.js';
+// Import SceneManager for centralized scene management
+import { SceneManager } from './managers/SceneManager.js';
+import { SCENE_CONFIG } from './config/sceneConfig.js';
 // Import all game scenes
 import { WelcomeScene } from './scenes/WelcomeScene.js';
 import { Level1Scene } from './scenes/Level1Scene.js';
@@ -23,6 +26,7 @@ import { Level5Scene } from './scenes/Level5Scene.js';
 import { Level6Scene } from './scenes/Level6Scene.js';
 import { Level7Scene } from './scenes/Level7Scene.js';
 import { Level8Scene } from './scenes/Level8Scene.js';
+import { Level9Scene } from './scenes/Level9Scene.js';
 
 /**
  * Phaser Game Configuration Object
@@ -51,7 +55,7 @@ const gameConfig = {
      * Scenes are the different "screens" or "levels" of the game
      * First scene in array (WelcomeScene) will be the default starting scene
      */
-    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene]
+    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene, Level9Scene]
 };
 
 /**
@@ -59,6 +63,13 @@ const gameConfig = {
  * This creates the game engine and starts it with the configuration above
  */
 const game = new Phaser.Game(gameConfig);
+
+/**
+ * Initialize the SceneManager
+ * This provides centralized scene management and eliminates code duplication
+ */
+const sceneManager = new SceneManager(game);
+sceneManager.initialize(SCENE_CONFIG);
 
 /**
  * Window Resize Event Handler
@@ -143,66 +154,19 @@ function setupEventHandlers() {
      * - Running and paused → Resume simulation
      */
     const startBtn = document.getElementById('btn-start');
-    console.log('Attaching click handler to start button:', startBtn);
     
     if (startBtn) {
         startBtn.addEventListener('click', () => {
-            console.log('START BUTTON CLICKED!');
-            console.log('Current GameState:', {
-                isRunning: GameState.isRunning,
-                isPaused: GameState.isPaused,
-                isGameOver: GameState.isGameOver
-            });
-            
-            // Get references to all level scenes
-            const level1Scene = game.scene.getScene('Level1Scene');
-            const level2Scene = game.scene.getScene('Level2Scene');
-            const level3Scene = game.scene.getScene('Level3Scene');
-            const level4Scene = game.scene.getScene('Level4Scene');
-            const level5Scene = game.scene.getScene('Level5Scene');
-            const level6Scene = game.scene.getScene('Level6Scene');
-            const level7Scene = game.scene.getScene('Level7Scene');
-            const level8Scene = game.scene.getScene('Level8Scene');
-            
-            console.log('Level1Scene active?', level1Scene?.sys.settings.active);
-            console.log('Level2Scene active?', level2Scene?.sys.settings.active);
-            console.log('Level3Scene active?', level3Scene?.sys.settings.active);
-            console.log('Level4Scene active?', level4Scene?.sys.settings.active);
-            console.log('Level5Scene active?', level5Scene?.sys.settings.active);
-            console.log('Level6Scene active?', level6Scene?.sys.settings.active);
-            console.log('Level7Scene active?', level7Scene?.sys.settings.active);
-            console.log('Level8Scene active?', level8Scene?.sys.settings.active);
-            
-            // Determine which scene is currently active
-            const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
-                               (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
-                               (level3Scene && level3Scene.sys.settings.active) ? level3Scene :
-                               (level4Scene && level4Scene.sys.settings.active) ? level4Scene :
-                               (level5Scene && level5Scene.sys.settings.active) ? level5Scene :
-                               (level6Scene && level6Scene.sys.settings.active) ? level6Scene :
-                               (level7Scene && level7Scene.sys.settings.active) ? level7Scene :
-                               (level8Scene && level8Scene.sys.settings.active) ? level8Scene : null;
-            
-            console.log('Active scene:', activeScene);
-            
-            if (!activeScene) {
-                console.error('No active scene found!');
-                return; // No active scene, exit
-            }
-            
             // Handle different states
             if (!GameState.isRunning) {
                 // Not running → Start simulation
-                console.log('Calling startSimulation()');
-                activeScene.startSimulation();
+                sceneManager.executeOnActive('startSimulation');
             } else if (GameState.isPaused) {
                 // Running but paused → Resume simulation
-                console.log('Calling resumeSimulation()');
-                activeScene.resumeSimulation();
+                sceneManager.executeOnActive('resumeSimulation');
             } else {
                 // Running and not paused → Pause simulation
-                console.log('Calling pauseSimulation()');
-                activeScene.pauseSimulation();
+                sceneManager.executeOnActive('pauseSimulation');
             }
         });
     } else {
@@ -216,34 +180,7 @@ function setupEventHandlers() {
      * This completely resets the scene, clearing all state and UI.
      */
     document.getElementById('btn-reset').addEventListener('click', () => {
-        // Get references to all level scenes
-        const level1Scene = game.scene.getScene('Level1Scene');
-        const level2Scene = game.scene.getScene('Level2Scene');
-        const level3Scene = game.scene.getScene('Level3Scene');
-        const level4Scene = game.scene.getScene('Level4Scene');
-        const level5Scene = game.scene.getScene('Level5Scene');
-        const level6Scene = game.scene.getScene('Level6Scene');
-        const level7Scene = game.scene.getScene('Level7Scene');
-        const level8Scene = game.scene.getScene('Level8Scene');
-        
-        // Restart whichever scene is currently active
-        if (level1Scene && level1Scene.sys.settings.active) {
-            level1Scene.scene.restart();
-        } else if (level2Scene && level2Scene.sys.settings.active) {
-            level2Scene.scene.restart();
-        } else if (level3Scene && level3Scene.sys.settings.active) {
-            level3Scene.scene.restart();
-        } else if (level4Scene && level4Scene.sys.settings.active) {
-            level4Scene.scene.restart();
-        } else if (level5Scene && level5Scene.sys.settings.active) {
-            level5Scene.scene.restart();
-        } else if (level6Scene && level6Scene.sys.settings.active) {
-            level6Scene.scene.restart();
-        } else if (level7Scene && level7Scene.sys.settings.active) {
-            level7Scene.scene.restart();
-        } else if (level8Scene && level8Scene.sys.settings.active) {
-            level8Scene.scene.restart();
-        }
+        sceneManager.restartCurrentScene();
     });
 
     /**
@@ -285,22 +222,7 @@ function setupEventHandlers() {
      * Allows player to retry the same level.
      */
     document.getElementById('btn-modal-retry').addEventListener('click', () => {
-        // Get references to all level scenes
-        const level1Scene = game.scene.getScene('Level1Scene');
-        const level2Scene = game.scene.getScene('Level2Scene');
-        const level3Scene = game.scene.getScene('Level3Scene');
-        const level4Scene = game.scene.getScene('Level4Scene');
-        
-        // Restart whichever scene is currently active
-        if (level1Scene && level1Scene.sys.settings.active) {
-            level1Scene.scene.restart();
-        } else if (level2Scene && level2Scene.sys.settings.active) {
-            level2Scene.scene.restart();
-        } else if (level3Scene && level3Scene.sys.settings.active) {
-            level3Scene.scene.restart();
-        } else if (level4Scene && level4Scene.sys.settings.active) {
-            level4Scene.scene.restart();
-        }
+        sceneManager.restartCurrentScene();
     });
 
     /**
@@ -310,22 +232,7 @@ function setupEventHandlers() {
      * Transitions the player to the next level.
      */
     document.getElementById('btn-modal-next').addEventListener('click', () => {
-        // Get references to all level scenes
-        const level1Scene = game.scene.getScene('Level1Scene');
-        const level2Scene = game.scene.getScene('Level2Scene');
-        const level3Scene = game.scene.getScene('Level3Scene');
-        const level4Scene = game.scene.getScene('Level4Scene');
-        
-        // Transition to appropriate next level
-        if (level1Scene && level1Scene.sys.settings.active) {
-            level1Scene.scene.start('Level2Scene');
-        } else if (level2Scene && level2Scene.sys.settings.active) {
-            level2Scene.scene.start('Level3Scene');
-        } else if (level3Scene && level3Scene.sys.settings.active) {
-            level3Scene.scene.start('Level4Scene');
-        } else if (level4Scene && level4Scene.sys.settings.active) {
-            level4Scene.scene.start('Level5Scene');
-        }
+        sceneManager.goToNextLevel();
     });
 
     /**
@@ -335,218 +242,21 @@ function setupEventHandlers() {
      * Useful for development and testing different levels quickly.
      */
     document.getElementById('btn-skip').addEventListener('click', () => {
-        // Get references to all level scenes
-        const level1Scene = game.scene.getScene('Level1Scene');
-        const level2Scene = game.scene.getScene('Level2Scene');
-        const level3Scene = game.scene.getScene('Level3Scene');
-        const level4Scene = game.scene.getScene('Level4Scene');
-        const level5Scene = game.scene.getScene('Level5Scene');
-        const level6Scene = game.scene.getScene('Level6Scene');
-        const level7Scene = game.scene.getScene('Level7Scene');
-        const level8Scene = game.scene.getScene('Level8Scene');
-        
-        // Call the skipLevel method on whichever scene is currently active
-        if (level1Scene && level1Scene.sys.settings.active) {
-            level1Scene.skipLevel();
-        } else if (level2Scene && level2Scene.sys.settings.active) {
-            level2Scene.skipLevel();
-        } else if (level3Scene && level3Scene.sys.settings.active) {
-            level3Scene.skipLevel();
-        } else if (level4Scene && level4Scene.sys.settings.active) {
-            level4Scene.skipLevel();
-        } else if (level5Scene && level5Scene.sys.settings.active) {
-            level5Scene.skipLevel();
-        } else if (level6Scene && level6Scene.sys.settings.active) {
-            level6Scene.skipLevel();
-        } else if (level7Scene && level7Scene.sys.settings.active) {
-            level7Scene.skipLevel();
-        } else if (level8Scene && level8Scene.sys.settings.active) {
-            level8Scene.skipLevel();
-        }
+        sceneManager.skipCurrentLevel();
     });
 
     /**
      * Level Selection Dropdown Handler
      * 
      * Allows player to switch between different levels using a dropdown menu.
-     * Listens for changes to the select element.
+     * Now simplified using SceneManager!
      */
     const levelSelector = document.getElementById('level-selector');
     if (levelSelector) {
         levelSelector.addEventListener('change', (event) => {
-            const selectedLevel = event.target.value;
-            console.log('Level selected:', selectedLevel);
-            
-            if (selectedLevel === '1') {
-                console.log('Switching to Level 1');
-                // Stop all other scenes
-                const welcomeScene = game.scene.getScene('WelcomeScene');
-                const level2Scene = game.scene.getScene('Level2Scene');
-                const level3Scene = game.scene.getScene('Level3Scene');
-                const level4Scene = game.scene.getScene('Level4Scene');
-                const level5Scene = game.scene.getScene('Level5Scene');
-                const level6Scene = game.scene.getScene('Level6Scene');
-                const level7Scene = game.scene.getScene('Level7Scene');
-                if (welcomeScene) game.scene.stop('WelcomeScene');
-                if (level2Scene) game.scene.stop('Level2Scene');
-                if (level3Scene) game.scene.stop('Level3Scene');
-                if (level4Scene) game.scene.stop('Level4Scene');
-                if (level5Scene) game.scene.stop('Level5Scene');
-                if (level6Scene) game.scene.stop('Level6Scene');
-                if (level7Scene) game.scene.stop('Level7Scene');
-                // Start Level 1
-                game.scene.start('Level1Scene');
-                // Reset dropdown to default
-                setTimeout(() => { levelSelector.value = ''; }, 100);
-            } else if (selectedLevel === '2') {
-                console.log('Switching to Level 2');
-                // Stop all other scenes
-                const welcomeScene = game.scene.getScene('WelcomeScene');
-                const level1Scene = game.scene.getScene('Level1Scene');
-                const level3Scene = game.scene.getScene('Level3Scene');
-                const level4Scene = game.scene.getScene('Level4Scene');
-                const level5Scene = game.scene.getScene('Level5Scene');
-                const level6Scene = game.scene.getScene('Level6Scene');
-                const level7Scene = game.scene.getScene('Level7Scene');
-                if (welcomeScene) game.scene.stop('WelcomeScene');
-                if (level1Scene) game.scene.stop('Level1Scene');
-                if (level3Scene) game.scene.stop('Level3Scene');
-                if (level4Scene) game.scene.stop('Level4Scene');
-                if (level5Scene) game.scene.stop('Level5Scene');
-                if (level6Scene) game.scene.stop('Level6Scene');
-                if (level7Scene) game.scene.stop('Level7Scene');
-                // Start Level 2
-                game.scene.start('Level2Scene');
-                // Reset dropdown to default
-                setTimeout(() => { levelSelector.value = ''; }, 100);
-            } else if (selectedLevel === '3') {
-                console.log('Switching to Level 3');
-                // Stop all other scenes
-                const welcomeScene = game.scene.getScene('WelcomeScene');
-                const level1Scene = game.scene.getScene('Level1Scene');
-                const level2Scene = game.scene.getScene('Level2Scene');
-                const level4Scene = game.scene.getScene('Level4Scene');
-                const level5Scene = game.scene.getScene('Level5Scene');
-                const level6Scene = game.scene.getScene('Level6Scene');
-                const level7Scene = game.scene.getScene('Level7Scene');
-                if (welcomeScene) game.scene.stop('WelcomeScene');
-                if (level1Scene) game.scene.stop('Level1Scene');
-                if (level2Scene) game.scene.stop('Level2Scene');
-                if (level4Scene) game.scene.stop('Level4Scene');
-                if (level5Scene) game.scene.stop('Level5Scene');
-                if (level6Scene) game.scene.stop('Level6Scene');
-                if (level7Scene) game.scene.stop('Level7Scene');
-                // Start Level 3
-                game.scene.start('Level3Scene');
-                // Reset dropdown to default
-                setTimeout(() => { levelSelector.value = ''; }, 100);
-            } else if (selectedLevel === '4') {
-                console.log('Switching to Level 4');
-                // Stop all other scenes
-                const welcomeScene = game.scene.getScene('WelcomeScene');
-                const level1Scene = game.scene.getScene('Level1Scene');
-                const level2Scene = game.scene.getScene('Level2Scene');
-                const level3Scene = game.scene.getScene('Level3Scene');
-                const level5Scene = game.scene.getScene('Level5Scene');
-                const level6Scene = game.scene.getScene('Level6Scene');
-                const level7Scene = game.scene.getScene('Level7Scene');
-                if (welcomeScene) game.scene.stop('WelcomeScene');
-                if (level1Scene) game.scene.stop('Level1Scene');
-                if (level2Scene) game.scene.stop('Level2Scene');
-                if (level3Scene) game.scene.stop('Level3Scene');
-                if (level5Scene) game.scene.stop('Level5Scene');
-                if (level6Scene) game.scene.stop('Level6Scene');
-                if (level7Scene) game.scene.stop('Level7Scene');
-                // Start Level 4
-                game.scene.start('Level4Scene');
-                // Reset dropdown to default
-                setTimeout(() => { levelSelector.value = ''; }, 100);
-            } else if (selectedLevel === '5') {
-                console.log('Switching to Level 5');
-                // Stop all other scenes
-                const welcomeScene = game.scene.getScene('WelcomeScene');
-                const level1Scene = game.scene.getScene('Level1Scene');
-                const level2Scene = game.scene.getScene('Level2Scene');
-                const level3Scene = game.scene.getScene('Level3Scene');
-                const level4Scene = game.scene.getScene('Level4Scene');
-                const level6Scene = game.scene.getScene('Level6Scene');
-                const level7Scene = game.scene.getScene('Level7Scene');
-                if (welcomeScene) game.scene.stop('WelcomeScene');
-                if (level1Scene) game.scene.stop('Level1Scene');
-                if (level2Scene) game.scene.stop('Level2Scene');
-                if (level3Scene) game.scene.stop('Level3Scene');
-                if (level4Scene) game.scene.stop('Level4Scene');
-                if (level6Scene) game.scene.stop('Level6Scene');
-                if (level7Scene) game.scene.stop('Level7Scene');
-                // Start Level 5
-                game.scene.start('Level5Scene');
-                // Reset dropdown to default
-                setTimeout(() => { levelSelector.value = ''; }, 100);
-            } else if (selectedLevel === '6') {
-                console.log('Switching to Level 6');
-                // Stop all other scenes
-                const welcomeScene = game.scene.getScene('WelcomeScene');
-                const level1Scene = game.scene.getScene('Level1Scene');
-                const level2Scene = game.scene.getScene('Level2Scene');
-                const level3Scene = game.scene.getScene('Level3Scene');
-                const level4Scene = game.scene.getScene('Level4Scene');
-                const level5Scene = game.scene.getScene('Level5Scene');
-                const level7Scene = game.scene.getScene('Level7Scene');
-                if (welcomeScene) game.scene.stop('WelcomeScene');
-                if (level1Scene) game.scene.stop('Level1Scene');
-                if (level2Scene) game.scene.stop('Level2Scene');
-                if (level3Scene) game.scene.stop('Level3Scene');
-                if (level4Scene) game.scene.stop('Level4Scene');
-                if (level5Scene) game.scene.stop('Level5Scene');
-                if (level7Scene) game.scene.stop('Level7Scene');
-                // Start Level 6
-                game.scene.start('Level6Scene');
-                // Reset dropdown to default
-                setTimeout(() => { levelSelector.value = ''; }, 100);
-            } else if (selectedLevel === '7') {
-                console.log('Switching to Level 7');
-                // Stop all other scenes
-                const welcomeScene = game.scene.getScene('WelcomeScene');
-                const level1Scene = game.scene.getScene('Level1Scene');
-                const level2Scene = game.scene.getScene('Level2Scene');
-                const level3Scene = game.scene.getScene('Level3Scene');
-                const level4Scene = game.scene.getScene('Level4Scene');
-                const level5Scene = game.scene.getScene('Level5Scene');
-                const level6Scene = game.scene.getScene('Level6Scene');
-                const level8Scene = game.scene.getScene('Level8Scene');
-                if (welcomeScene) game.scene.stop('WelcomeScene');
-                if (level1Scene) game.scene.stop('Level1Scene');
-                if (level2Scene) game.scene.stop('Level2Scene');
-                if (level3Scene) game.scene.stop('Level3Scene');
-                if (level4Scene) game.scene.stop('Level4Scene');
-                if (level5Scene) game.scene.stop('Level5Scene');
-                if (level6Scene) game.scene.stop('Level6Scene');
-                if (level8Scene) game.scene.stop('Level8Scene');
-                // Start Level 7
-                game.scene.start('Level7Scene');
-                // Reset dropdown to default
-                setTimeout(() => { levelSelector.value = ''; }, 100);
-            } else if (selectedLevel === '8') {
-                console.log('Switching to Level 8');
-                // Stop all other scenes
-                const welcomeScene = game.scene.getScene('WelcomeScene');
-                const level1Scene = game.scene.getScene('Level1Scene');
-                const level2Scene = game.scene.getScene('Level2Scene');
-                const level3Scene = game.scene.getScene('Level3Scene');
-                const level4Scene = game.scene.getScene('Level4Scene');
-                const level5Scene = game.scene.getScene('Level5Scene');
-                const level6Scene = game.scene.getScene('Level6Scene');
-                const level7Scene = game.scene.getScene('Level7Scene');
-                if (welcomeScene) game.scene.stop('WelcomeScene');
-                if (level1Scene) game.scene.stop('Level1Scene');
-                if (level2Scene) game.scene.stop('Level2Scene');
-                if (level3Scene) game.scene.stop('Level3Scene');
-                if (level4Scene) game.scene.stop('Level4Scene');
-                if (level5Scene) game.scene.stop('Level5Scene');
-                if (level6Scene) game.scene.stop('Level6Scene');
-                if (level7Scene) game.scene.stop('Level7Scene');
-                // Start Level 8
-                game.scene.start('Level8Scene');
+            const selectedLevel = parseInt(event.target.value);
+            if (selectedLevel && selectedLevel >= 1 && selectedLevel <= 9) {
+                sceneManager.switchToLevel(selectedLevel);
                 // Reset dropdown to default
                 setTimeout(() => { levelSelector.value = ''; }, 100);
             }
@@ -562,27 +272,7 @@ function setupEventHandlers() {
      * Increases the camera zoom level (zoom in).
      */
     document.getElementById('btn-zoom-in').addEventListener('click', () => {
-        const level1Scene = game.scene.getScene('Level1Scene');
-        const level2Scene = game.scene.getScene('Level2Scene');
-        const level3Scene = game.scene.getScene('Level3Scene');
-        const level4Scene = game.scene.getScene('Level4Scene');
-        const level5Scene = game.scene.getScene('Level5Scene');
-        const level6Scene = game.scene.getScene('Level6Scene');
-        const level7Scene = game.scene.getScene('Level7Scene');
-        const level8Scene = game.scene.getScene('Level8Scene');
-        
-        const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
-                           (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
-                           (level3Scene && level3Scene.sys.settings.active) ? level3Scene :
-                           (level4Scene && level4Scene.sys.settings.active) ? level4Scene :
-                           (level5Scene && level5Scene.sys.settings.active) ? level5Scene :
-                           (level6Scene && level6Scene.sys.settings.active) ? level6Scene :
-                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene :
-                           (level8Scene && level8Scene.sys.settings.active) ? level8Scene : null;
-        
-        if (activeScene && activeScene.adjustZoom) {
-            activeScene.adjustZoom(0.1);
-        }
+        sceneManager.executeOnActive('adjustZoom', 0.1);
     });
 
     /**
@@ -591,27 +281,7 @@ function setupEventHandlers() {
      * Decreases the camera zoom level (zoom out).
      */
     document.getElementById('btn-zoom-out').addEventListener('click', () => {
-        const level1Scene = game.scene.getScene('Level1Scene');
-        const level2Scene = game.scene.getScene('Level2Scene');
-        const level3Scene = game.scene.getScene('Level3Scene');
-        const level4Scene = game.scene.getScene('Level4Scene');
-        const level5Scene = game.scene.getScene('Level5Scene');
-        const level6Scene = game.scene.getScene('Level6Scene');
-        const level7Scene = game.scene.getScene('Level7Scene');
-        const level8Scene = game.scene.getScene('Level8Scene');
-        
-        const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
-                           (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
-                           (level3Scene && level3Scene.sys.settings.active) ? level3Scene :
-                           (level4Scene && level4Scene.sys.settings.active) ? level4Scene :
-                           (level5Scene && level5Scene.sys.settings.active) ? level5Scene :
-                           (level6Scene && level6Scene.sys.settings.active) ? level6Scene :
-                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene :
-                           (level8Scene && level8Scene.sys.settings.active) ? level8Scene : null;
-        
-        if (activeScene && activeScene.adjustZoom) {
-            activeScene.adjustZoom(-0.1);
-        }
+        sceneManager.executeOnActive('adjustZoom', -0.1);
     });
 
     /**
@@ -620,26 +290,6 @@ function setupEventHandlers() {
      * Resets the camera zoom to 100% (default).
      */
     document.getElementById('btn-zoom-reset').addEventListener('click', () => {
-        const level1Scene = game.scene.getScene('Level1Scene');
-        const level2Scene = game.scene.getScene('Level2Scene');
-        const level3Scene = game.scene.getScene('Level3Scene');
-        const level4Scene = game.scene.getScene('Level4Scene');
-        const level5Scene = game.scene.getScene('Level5Scene');
-        const level6Scene = game.scene.getScene('Level6Scene');
-        const level7Scene = game.scene.getScene('Level7Scene');
-        const level8Scene = game.scene.getScene('Level8Scene');
-        
-        const activeScene = (level1Scene && level1Scene.sys.settings.active) ? level1Scene :
-                           (level2Scene && level2Scene.sys.settings.active) ? level2Scene :
-                           (level3Scene && level3Scene.sys.settings.active) ? level3Scene :
-                           (level4Scene && level4Scene.sys.settings.active) ? level4Scene :
-                           (level5Scene && level5Scene.sys.settings.active) ? level5Scene :
-                           (level6Scene && level6Scene.sys.settings.active) ? level6Scene :
-                           (level7Scene && level7Scene.sys.settings.active) ? level7Scene :
-                           (level8Scene && level8Scene.sys.settings.active) ? level8Scene : null;
-        
-        if (activeScene && activeScene.resetZoom) {
-            activeScene.resetZoom();
-        }
+        sceneManager.executeOnActive('resetZoom');
     });
 }

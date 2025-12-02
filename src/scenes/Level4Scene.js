@@ -5,7 +5,7 @@
  * of horizontal application server scaling by allowing players to add multiple app servers.
  * 
  * Level Objectives:
- * - Process 1200 requests total (more than Level 3 to test multi-app-server scalability)
+ * - Process 1200 requests total
  * - Maintain error rate below 1%
  * - Learn to scale app servers horizontally to handle increased load
  * 
@@ -13,11 +13,6 @@
  * - 3 User nodes (generate requests)
  * - 1+ App Servers (process business logic - can be dynamically added)
  * - 2 Database Servers (handle data storage - fixed count)
- * - Three-tier architecture with horizontal app server scaling capability
- * 
- * Difficulty Progression:
- * - Similar to Level 3 but with higher overall traffic
- * - Encourages players to add app servers to handle load
  * 
  * Key Concepts Taught:
  * - Horizontal app server scaling
@@ -25,317 +20,117 @@
  * - Distributed application architecture
  */
 
-import { CONFIG, GameState, resetGameState } from '../config.js';
-import { ServerNode } from '../objects/ServerNode.js';
+import { CONFIG, GameState } from '../config.js';
+import { LAYOUT_CONFIG, ECONOMICS_CONFIG, UI_CONFIG } from '../config/index.js';
+import { UserNode, AppServerNode, DatabaseNode } from '../objects/nodes.js';
 import { drawDualLines } from '../utils/animations.js';
-import { updateUI } from '../utils/uiManager.js';
+import { BaseLevelScene } from './BaseLevelScene.js';
 
-export class Level4Scene extends Phaser.Scene {
+export class Level4Scene extends BaseLevelScene {
     /**
      * Constructor
      * 
-     * Initializes the scene with a unique key identifier.
+     * Configures Level 4 with multi-app-server scaling capability.
      */
     constructor() {
-        super({ key: 'Level4Scene' });
-        this.appServerCount = 1; // Track number of app servers
-        this.addAppButton = null; // Reference to the add app server button
-    }
-
-    /**
-     * Create Method
-     * 
-     * Called automatically by Phaser when the scene starts.
-     * Sets up Level 4 including UI updates, background, nodes, and initial state.
-     */
-    create() {
-        /**
-         * Show Game UI Elements
-         * Make the HTML UI visible
-         */
-        const leftSidebar = document.getElementById('left-sidebar');
-        const controlPanel = document.getElementById('control-panel');
-        if (leftSidebar) leftSidebar.style.display = 'flex';
-        if (controlPanel) controlPanel.style.display = 'flex';
-        
-        // Ensure result modal is hidden at start
-        document.getElementById('result-modal').style.display = 'none';
-        
-        /**
-         * Update Header for Level 4
-         * Change the page title to reflect the new level
-         */
-        const header = document.querySelector('#header h1');
-        if (header) header.textContent = 'Level 4: App Server Scaling';
-        
-        /**
-         * Update Objectives Display
-         * Show Level 4-specific objectives in the sidebar
-         */
-        const objectivesList = document.querySelector('.objectives-list');
-        if (objectivesList) {
-            objectivesList.innerHTML = `
-                <li>Complete ${CONFIG.level4Target} requests</li>
-                <li>Maintain error rate < ${CONFIG.maxErrorRate}%</li>
-                <li>Scale app servers horizontally when needed</li>
-            `;
-        }
-        
-        /**
-         * Reset Game State for Level 4
-         * Clear previous level data and initialize with Level 4 defaults
-         */
-        resetGameState(4);
-        
-        /**
-         * Initialize Scene-Specific State Variables
-         */
-        this.trafficTimer = null;
-        this.difficultyTimer = null;
-        this.currentTrafficDelay = CONFIG.level4.initialTrafficDelay;
-        this.packetsPerWave = CONFIG.level4.initialPacketsPerWave;
-        this.appServerCount = 1; // Start with one app server
-
-        // Update the UI to reflect initial state
-        updateUI();
-
-        // Set up visual elements and create server nodes
-        this.setupBackground();
-        this.createNodes();
-        this.createAddAppServerButton();
-        this.setupZoom();
-        this.setupCameraDrag();
-    }
-
-    /**
-     * Setup Camera Drag
-     * 
-     * Enables dragging the entire canvas by clicking and dragging the background.
-     * Works regardless of game state (running, paused, or stopped).
-     */
-    setupCameraDrag() {
-        // Camera drag state
-        this.isDraggingCamera = false;
-        this.dragStartX = 0;
-        this.dragStartY = 0;
-        this.cameraStartX = 0;
-        this.cameraStartY = 0;
-
-        // Listen for pointer down on the canvas (not on game objects)
-        this.input.on('pointerdown', (pointer) => {
-            // Only start camera drag if not clicking on a game object
-            // Right mouse button or middle mouse button can also be used
-            if (pointer.rightButtonDown() || pointer.middleButtonDown()) {
-                this.startCameraDrag(pointer);
-            } else if (pointer.leftButtonDown() && !pointer.event.target.closest('.server-node')) {
-                // Left button can drag if not over a node
-                // Check if we're over any interactive object
-                const objectsUnderPointer = this.input.hitTestPointer(pointer);
-                if (objectsUnderPointer.length === 0) {
-                    this.startCameraDrag(pointer);
+        super({
+            key: 'Level4Scene',
+            levelNumber: 4,
+            targetTotal: CONFIG.level4Target,
+            initialTrafficDelay: 1400,
+            initialPacketsPerWave: 1,
+            difficultyInterval: 8500,
+            userNodeIds: ['User1', 'User2', 'User3'],
+            difficultyStages: {
+                stage1: {
+                    trafficDelay: 1100,
+                    packetsPerWave: 2,
+                    message: "Traffic increasing..."
+                },
+                stage2: {
+                    trafficDelay: 800,
+                    packetsPerWave: 2,
+                    message: "Load rising..."
+                },
+                stage3: {
+                    trafficDelay: 600,
+                    packetsPerWave: 3,
+                    message: "⚠ High traffic!"
+                },
+                stage4: {
+                    trafficDelay: 400,
+                    packetsPerWave: 3,
+                    message: "⚠ Consider adding app servers!"
+                },
+                stage5: {
+                    trafficDelay: 300,
+                    packetsPerWave: 4,
+                    message: "⛔ System under heavy load!"
+                },
+                stage6: {
+                    trafficDelay: 200,
+                    packetsPerWave: 5,
+                    message: "⛔ Critical load!"
                 }
             }
         });
-
-        // Listen for pointer move
-        this.input.on('pointermove', (pointer) => {
-            if (this.isDraggingCamera) {
-                this.updateCameraDrag(pointer);
-            }
-        });
-
-        // Listen for pointer up
-        this.input.on('pointerup', (pointer) => {
-            if (this.isDraggingCamera) {
-                this.endCameraDrag();
-            }
-        });
-
-        // Also end drag if pointer leaves the canvas
-        this.input.on('pointerout', (pointer) => {
-            if (this.isDraggingCamera) {
-                this.endCameraDrag();
-            }
-        });
+        this.appServerCount = 1;
+        this.addAppButton = null;
+        this.addAppButtonText = null;
     }
 
     /**
-     * Start Camera Drag
+     * Create Method Override
      * 
-     * @param {Phaser.Input.Pointer} pointer - The pointer that initiated the drag
+     * Extends base create() to add the app server addition button.
      */
-    startCameraDrag(pointer) {
-        this.isDraggingCamera = true;
-        this.dragStartX = pointer.x;
-        this.dragStartY = pointer.y;
-        this.cameraStartX = this.cameras.main.scrollX;
-        this.cameraStartY = this.cameras.main.scrollY;
-        
-        // Change cursor to grabbing hand
-        this.input.setDefaultCursor('grabbing');
-    }
-
-    /**
-     * Update Camera Drag
-     * 
-     * @param {Phaser.Input.Pointer} pointer - The pointer being moved
-     */
-    updateCameraDrag(pointer) {
-        // Calculate how far the pointer has moved
-        const deltaX = pointer.x - this.dragStartX;
-        const deltaY = pointer.y - this.dragStartY;
-        
-        // Move camera in opposite direction (to create dragging effect)
-        this.cameras.main.scrollX = this.cameraStartX - deltaX / this.currentZoom;
-        this.cameras.main.scrollY = this.cameraStartY - deltaY / this.currentZoom;
-    }
-
-    /**
-     * End Camera Drag
-     */
-    endCameraDrag() {
-        this.isDraggingCamera = false;
-        this.input.setDefaultCursor('default');
-    }
-
-    /**
-     * Setup Zoom Controls
-     * 
-     * Enables camera zoom functionality with mouse wheel and programmatic controls.
-     */
-    setupZoom() {
-        // Set initial zoom level
-        this.cameras.main.setZoom(1);
-        this.currentZoom = 1;
-        this.minZoom = 0.5;
-        this.maxZoom = 2.0;
-
-        // Enable mouse wheel zoom
-        this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
-            // deltaY > 0 means scroll down (zoom out), < 0 means scroll up (zoom in)
-            const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
-            this.adjustZoom(zoomDelta);
-        });
-    }
-
-    /**
-     * Adjust Zoom Level
-     * 
-     * @param {number} delta - Amount to change zoom (positive = zoom in, negative = zoom out)
-     */
-    adjustZoom(delta) {
-        this.currentZoom += delta;
-        this.currentZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.currentZoom));
-        
-        this.cameras.main.setZoom(this.currentZoom);
-        
-        // Update zoom display if it exists
-        const zoomDisplay = document.getElementById('zoom-level');
-        if (zoomDisplay) {
-            zoomDisplay.textContent = Math.round(this.currentZoom * 100) + '%';
-        }
-    }
-
-    /**
-     * Reset Zoom to Default
-     */
-    resetZoom() {
-        this.currentZoom = 1;
-        this.cameras.main.setZoom(1);
-        
-        const zoomDisplay = document.getElementById('zoom-level');
-        if (zoomDisplay) {
-            zoomDisplay.textContent = '100%';
-        }
-    }
-
-    /**
-     * Setup Background Graphics
-     * 
-     * Creates the visual background for the game canvas.
-     */
-    setupBackground() {
-        const w = this.cameras.main.width;
-        const h = this.cameras.main.height;
-
-        /**
-         * Set Camera Background Color
-         */
-        this.cameras.main.setBackgroundColor('#2a2a2a');
-
-        /**
-         * Add Grid Background
-         */
-        const gridSize = 6;
-        this.add.grid(
-            0, 0,
-            w * gridSize, h * gridSize,
-            40, 40,
-            0x2a2a2a,
-            0,
-            0x444444,
-            0.3
-        ).setOrigin(0.5, 0.5);
-        
-        /**
-         * Graphics Object for Connection Lines
-         */
-        this.graphics = this.add.graphics();
+    create() {
+        super.create();
+        this.createAddAppServerButton();
     }
 
     /**
      * Create Server Nodes
      * 
-     * Instantiates all server nodes for Level 4:
-     * - 3 User nodes (left side)
-     * - 1 App Server initially (center)
-     * - 2 Database Servers (right side)
+     * Instantiates initial server nodes for Level 4.
      */
     createNodes() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        const spacing = LAYOUT_CONFIG.spacing.vertical.medium;
+        const largeSpacing = LAYOUT_CONFIG.spacing.vertical.large;
 
-        /**
-         * Create User Nodes
-         */
-        const userConfig = CONFIG.level4.servers.user;
-        GameState.nodes['User1'] = new ServerNode(
-            this, w * 0.15, h/2 - 100,
-            'User A', 'user', userConfig.capacity, userConfig.speed
+        // Create User Nodes (using new UserNode class)
+        GameState.nodes['User1'] = new UserNode(
+            this, w * 0.15, h/2 - spacing, 'User A'
         );
-        GameState.nodes['User2'] = new ServerNode(
-            this, w * 0.15, h/2,
-            'User B', 'user', userConfig.capacity, userConfig.speed
+        GameState.nodes['User2'] = new UserNode(
+            this, w * 0.15, h/2, 'User B'
         );
-        GameState.nodes['User3'] = new ServerNode(
-            this, w * 0.15, h/2 + 100,
-            'User C', 'user', userConfig.capacity, userConfig.speed
+        GameState.nodes['User3'] = new UserNode(
+            this, w * 0.15, h/2 + spacing, 'User C'
         );
         
-        /**
-         * Create Initial Application Server
-         */
-        const appConfig = CONFIG.level4.servers.app;
-        GameState.nodes['App1'] = new ServerNode(
-            this, w * 0.5, h/2,
-            'App Server 1', 'app', appConfig.capacity, appConfig.speed
+        // Create Initial App Server (using new AppServerNode class)
+        GameState.nodes['App1'] = new AppServerNode(
+            this, w * 0.5, h/2, 'App Server 1', 
+            ECONOMICS_CONFIG.initialValues.appServerCapacity, 
+            ECONOMICS_CONFIG.initialValues.processingDelay
         );
         
-        /**
-         * Create Database Servers (2 databases)
-         */
-        const dbConfig = CONFIG.level4.servers.database;
-        const dbSpacing = 140;
-        const dbStartY = h/2 - dbSpacing/2;
+        // Create Database Servers (2 fixed databases, using new DatabaseNode class)
+        const dbStartY = h/2 - largeSpacing/2;
         
-        GameState.nodes['Database1'] = new ServerNode(
-            this, w * 0.8, dbStartY,
-            'Database 1', 'database', dbConfig.capacity, dbConfig.speed
+        GameState.nodes['Database1'] = new DatabaseNode(
+            this, w * 0.8, dbStartY, 'Database 1', 
+            ECONOMICS_CONFIG.initialValues.databaseCapacity, 
+            ECONOMICS_CONFIG.initialValues.databaseDelay
         );
         
-        GameState.nodes['Database2'] = new ServerNode(
-            this, w * 0.8, dbStartY + dbSpacing,
-            'Database 2', 'database', dbConfig.capacity, dbConfig.speed
+        GameState.nodes['Database2'] = new DatabaseNode(
+            this, w * 0.8, dbStartY + largeSpacing, 'Database 2', 
+            ECONOMICS_CONFIG.initialValues.databaseCapacity, 
+            ECONOMICS_CONFIG.initialValues.databaseDelay
         );
     }
 
@@ -347,41 +142,36 @@ export class Level4Scene extends Phaser.Scene {
     createAddAppServerButton() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
+        const cost = ECONOMICS_CONFIG.purchases.appServer;
 
-        // Create button background
         this.addAppButton = this.add.rectangle(
             w * 0.5, h - 50,
-            200, 40,
-            0x4a90e2
+            UI_CONFIG.buttons.medium.width, 
+            UI_CONFIG.buttons.medium.height,
+            UI_CONFIG.buttonColors.primary
         ).setInteractive({ useHandCursor: true });
 
-        // Create button text
-        const buttonText = this.add.text(
+        this.addAppButtonText = this.add.text(
             w * 0.5, h - 50,
-            '+ Add App Server ($300)',
+            `+ Add App Server ($${cost})`,
             {
-                fontSize: '14px',
-                color: '#ffffff',
-                fontFamily: 'Arial'
+                fontSize: UI_CONFIG.fonts.button,
+                color: UI_CONFIG.textColors.light,
+                fontFamily: UI_CONFIG.fontFamily
             }
         ).setOrigin(0.5);
 
-        // Button hover effects
         this.addAppButton.on('pointerover', () => {
-            this.addAppButton.setFillStyle(0x5aa0f2);
+            this.addAppButton.setFillStyle(UI_CONFIG.buttonColors.hover);
         });
 
         this.addAppButton.on('pointerout', () => {
-            this.addAppButton.setFillStyle(0x4a90e2);
+            this.addAppButton.setFillStyle(UI_CONFIG.buttonColors.primary);
         });
 
-        // Button click handler
         this.addAppButton.on('pointerdown', () => {
             this.addAppServer();
         });
-
-        // Store reference to button text for updates
-        this.addAppButtonText = buttonText;
     }
 
     /**
@@ -390,33 +180,25 @@ export class Level4Scene extends Phaser.Scene {
      * Adds a new app server to the architecture if the player has enough money.
      */
     addAppServer() {
-        const cost = 300;
+        const cost = ECONOMICS_CONFIG.purchases.appServer;
+        const maxServers = ECONOMICS_CONFIG.limits.appServers;
 
-        // Check if player has enough money
         if (GameState.money < cost) {
             this.showToast('Not enough money! Need $' + cost);
             return;
         }
 
-        // Check maximum limit (prevent too many app servers)
-        if (this.appServerCount >= 5) {
+        if (this.appServerCount >= maxServers) {
             this.showToast('Maximum app server limit reached!');
             return;
         }
 
-        // Deduct cost
         GameState.money -= cost;
-
-        // Increment app server count
         this.appServerCount++;
 
-        // Calculate position for new app server
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        const appConfig = CONFIG.level4.servers.app;
-        
-        // Arrange app servers vertically with adequate spacing
-        const spacing = 140;
+        const spacing = LAYOUT_CONFIG.spacing.vertical.large;
         const startY = h/2 - ((this.appServerCount - 1) * spacing) / 2;
 
         // Reposition existing app servers
@@ -427,131 +209,28 @@ export class Level4Scene extends Phaser.Scene {
             }
         }
 
-        // Create new app server
+        // Create new app server (using new AppServerNode class)
         const newY = startY + (this.appServerCount - 1) * spacing;
-        GameState.nodes['App' + this.appServerCount] = new ServerNode(
+        GameState.nodes['App' + this.appServerCount] = new AppServerNode(
             this, w * 0.5, newY,
-            'App Server ' + this.appServerCount, 'app', appConfig.capacity, appConfig.speed
+            'App Server ' + this.appServerCount, 
+            ECONOMICS_CONFIG.initialValues.appServerCapacity, 
+            ECONOMICS_CONFIG.initialValues.processingDelay
         );
 
-        // Update UI
-        updateUI();
+        this.updateUI();
         this.showToast('App Server ' + this.appServerCount + ' added!');
-    }
-
-    /**
-     * Show Toast Notification
-     */
-    showToast(msg) {
-        const toast = document.getElementById('difficulty-toast');
-        toast.innerText = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
-    }
-
-    /**
-     * Start Simulation
-     */
-    startSimulation() {
-        if (GameState.isRunning || GameState.isGameOver) return;
-        
-        GameState.isRunning = true;
-        GameState.isPaused = false;
-        this.time.paused = false;
-        this.tweens.resumeAll();
-        
-        this.scheduleNextWave();
-        
-        this.difficultyTimer = this.time.addEvent({
-            delay: CONFIG.level4.difficultyInterval,
-            callback: () => this.increaseDifficulty(),
-            loop: true
-        });
-        
-        updateUI();
-    }
-
-    /**
-     * Pause Simulation
-     */
-    pauseSimulation() {
-        if (!GameState.isRunning || GameState.isPaused || GameState.isGameOver) return;
-        
-        GameState.isPaused = true;
-        this.time.paused = true;
-        this.tweens.pauseAll();
-        updateUI();
-    }
-
-    /**
-     * Resume Simulation
-     */
-    resumeSimulation() {
-        if (!GameState.isRunning || !GameState.isPaused || GameState.isGameOver) return;
-        
-        GameState.isPaused = false;
-        this.time.paused = false;
-        this.tweens.resumeAll();
-        updateUI();
-    }
-
-    /**
-     * Schedule Next Traffic Wave
-     */
-    scheduleNextWave() {
-        if (!GameState.isRunning) return;
-        
-        const users = ['User1', 'User2', 'User3'];
-        
-        for (let i = 0; i < this.packetsPerWave; i++) {
-            const userNode = GameState.nodes[users[Math.floor(Math.random() * users.length)]];
-            this.time.delayedCall(i * 100, () => this.spawnPacket(userNode));
-        }
-        
-        this.trafficTimer = this.time.delayedCall(this.currentTrafficDelay, () => {
-            this.scheduleNextWave();
-        });
-    }
-
-    /**
-     * Increase Difficulty
-     */
-    increaseDifficulty() {
-        GameState.difficultyLevel++;
-        
-        const stageName = `stage${GameState.difficultyLevel}`;
-        const stage = CONFIG.level4.difficulty[stageName];
-        
-        if (!stage) {
-            this.showDifficultyToast("Maximum load reached");
-            return;
-        }
-        
-        this.currentTrafficDelay = stage.trafficDelay;
-        this.packetsPerWave = stage.packetsPerWave;
-        this.showDifficultyToast(stage.message);
-        updateUI();
-    }
-
-    /**
-     * Show Difficulty Toast Notification
-     */
-    showDifficultyToast(msg) {
-        const toast = document.getElementById('difficulty-toast');
-        toast.innerText = msg;
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
     /**
      * Update Method
      * 
-     * Called every frame. Redraws connection lines.
+     * Draws connection lines for all app servers and databases.
      */
     update() {
         this.graphics.clear();
         
-        // Draw User → App Connections (for all app servers)
+        // Draw User → App connections (for all app servers)
         ['User1', 'User2', 'User3'].forEach(uid => {
             const user = GameState.nodes[uid];
             for (let i = 1; i <= this.appServerCount; i++) {
@@ -562,7 +241,7 @@ export class Level4Scene extends Phaser.Scene {
             }
         });
         
-        // Draw App → Database Connections (for all app servers to all databases)
+        // Draw App → Database connections (for all app servers to all databases)
         for (let i = 1; i <= this.appServerCount; i++) {
             const app = GameState.nodes['App' + i];
             if (app) {
@@ -577,21 +256,19 @@ export class Level4Scene extends Phaser.Scene {
     /**
      * Spawn Packet
      * 
-     * Creates a new request packet and routes it through the system.
+     * Creates request packets with read/write visualization.
      */
     spawnPacket(startNode) {
-        // Safety check: ensure startNode exists
         if (!startNode || !startNode.active) {
             console.error('spawnPacket called with invalid startNode:', startNode);
             return;
         }
         
         const isWrite = Math.random() * 100 < CONFIG.writeRequestPercentage;
-        
         let packet;
         
         if (isWrite) {
-            const size = 6;
+            const size = LAYOUT_CONFIG.packets.diamondSize;
             packet = this.add.graphics();
             packet.fillStyle(CONFIG.colors.packetReq, 1);
             packet.beginPath();
@@ -606,9 +283,8 @@ export class Level4Scene extends Phaser.Scene {
             packet.isWrite = true;
         } else {
             packet = this.add.circle(
-                startNode.x,
-                startNode.y, 
-                5,
+                startNode.x, startNode.y, 
+                LAYOUT_CONFIG.packets.circleRadius,
                 CONFIG.colors.packetReq
             );
             packet.isWrite = false;
@@ -616,60 +292,6 @@ export class Level4Scene extends Phaser.Scene {
         
         packet.sourceNode = startNode;
         packet.isResponse = false;
-        
         startNode.routePacket(packet);
-    }
-
-    /**
-     * Skip Level (Debug/Testing Feature)
-     */
-    skipLevel() {
-        if (this.trafficTimer) this.trafficTimer.remove();
-        if (this.difficultyTimer) this.difficultyTimer.remove();
-
-        GameState.total = CONFIG.level4Target;
-        GameState.success = CONFIG.level4Target;
-        GameState.errors = 0;
-        GameState.isRunning = false;
-        GameState.isGameOver = true;
-
-        updateUI();
-        
-        const rate = (GameState.errors / GameState.total) * 100;
-        const modal = document.getElementById('result-modal');
-        const title = document.getElementById('modal-title');
-        const body = document.getElementById('modal-body');
-        const btnNext = document.getElementById('btn-modal-next');
-
-        modal.style.display = 'block';
-        modal.classList.add('show');
-
-        title.innerText = "Level 4 Complete!";
-        body.innerHTML = `
-            <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
-            <p>You successfully handled ${CONFIG.level4Target} requests with app server scaling!</p>
-            
-            <div class="concept-box" style="background: rgba(74, 144, 226, 0.1); border: 1px solid #4a90e2; border-radius: 8px; padding: 15px; margin-top: 15px;">
-                <strong>Architect's Notes: Horizontal App Server Scaling</strong><br/>
-                Adding multiple app servers introduces new capabilities:
-                <br/><br/>
-                <ul style="text-align: left; margin-left: 20px;">
-                    <li>✅ Distributed processing load across multiple servers</li>
-                    <li>✅ Better fault tolerance and availability</li>
-                    <li>✅ Easier to scale than vertical scaling</li>
-                    <li>❌ Requires load balancing strategy</li>
-                    <li>❌ Session management complexity</li>
-                    <li>❌ More servers = higher infrastructure cost</li>
-                </ul>
-                <br/>
-                <strong>Key Insight:</strong> Horizontal scaling of application servers allows you to handle more traffic by adding more servers. This is more flexible than vertical scaling but requires proper load balancing.
-            </div>
-        `;
-        
-        // Show next button to go to Level 5
-        btnNext.style.display = 'inline-block';
-        btnNext.onclick = () => {
-            this.scene.start('Level5Scene');
-        };
     }
 }

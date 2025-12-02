@@ -1,12 +1,12 @@
 /**
- * Level 8 Scene - Read Replica Introduction
+ * Level 9 Scene - Pubsub Queue Introduction
  * 
- * This scene implements the eighth level teaching database read replica concepts.
+ * This scene implements the ninth level teaching asynchronous message queue concepts.
  * 
  * Level Objectives:
  * - Process 2000 requests total
  * - Maintain error rate below 1%
- * - Learn how read replicas scale database read operations
+ * - Learn how message queues decouple write operations
  * 
  * Architecture:
  * - 3 User nodes
@@ -14,28 +14,30 @@
  * - 1 Load Balancer
  * - 2 App Servers
  * - 1 Cache Server
+ * - 1 Pubsub Queue (can add more)
  * - 1 Primary Database
- * - Optional Read Replicas (can be added by player)
  * 
  * Key Concepts Taught:
- * - Read replicas handle read-only queries
- * - Primary database handles all writes
- * - Reduces load on primary database
- * - Improves read scalability
+ * - Asynchronous write processing
+ * - Message queues buffer write requests
+ * - App servers get immediate acknowledgment
+ * - Database processes queue at its own pace
+ * - Improved write throughput and reliability
  */
 
 import { CONFIG, GameState } from '../config.js';
 import { LAYOUT_CONFIG, ECONOMICS_CONFIG, UI_CONFIG } from '../config/index.js';
 import { UserNode, AppServerNode, CacheNode, DatabaseNode, LoadBalancerNode, CDNNode } from '../objects/nodes.js';
+import { PubsubQueueNode } from '../objects/PubsubQueueNode.js';
 import { drawDualLines } from '../utils/animations.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
 
-export class Level8Scene extends BaseLevelScene {
+export class Level9Scene extends BaseLevelScene {
     constructor() {
         super({
-            key: 'Level8Scene',
-            levelNumber: 8,
-            targetTotal: CONFIG.level8Target,
+            key: 'Level9Scene',
+            levelNumber: 9,
+            targetTotal: CONFIG.level9Target,
             initialTrafficDelay: 1000,
             initialPacketsPerWave: 2,
             difficultyInterval: 6500,
@@ -44,19 +46,19 @@ export class Level8Scene extends BaseLevelScene {
                 stage1: { trafficDelay: 800, packetsPerWave: 2, message: "Traffic increasing..." },
                 stage2: { trafficDelay: 600, packetsPerWave: 3, message: "Load rising..." },
                 stage3: { trafficDelay: 400, packetsPerWave: 4, message: "⚠ High traffic!" },
-                stage4: { trafficDelay: 280, packetsPerWave: 5, message: "⚠ Add Read Replicas!" },
-                stage5: { trafficDelay: 200, packetsPerWave: 6, message: "⛔ Heavy load!" },
+                stage4: { trafficDelay: 280, packetsPerWave: 5, message: "⚠ Heavy write load!" },
+                stage5: { trafficDelay: 200, packetsPerWave: 6, message: "⛔ Add Queue capacity!" },
                 stage6: { trafficDelay: 130, packetsPerWave: 7, message: "⛔ Maximum throughput!" }
             }
         });
-        this.readReplicaCount = 0;
-        this.rrButtonBg = null;
-        this.rrButtonText = null;
+        this.queueCount = 0;
+        this.queueButtonBg = null;
+        this.queueButtonText = null;
     }
 
     create() {
         super.create();
-        this.setupReadReplicaButton();
+        this.setupQueueButton();
     }
 
     createNodes() {
@@ -66,26 +68,26 @@ export class Level8Scene extends BaseLevelScene {
         const smallSpacing = LAYOUT_CONFIG.spacing.vertical.small;
         const vertOffset = LAYOUT_CONFIG.spacing.vertical.extraLarge;
 
-        // Create User Nodes (using new UserNode class)
+        // Create User Nodes
         GameState.nodes['User1'] = new UserNode(this, w * 0.12, h/2 - spacing, 'User A');
         GameState.nodes['User2'] = new UserNode(this, w * 0.12, h/2, 'User B');
         GameState.nodes['User3'] = new UserNode(this, w * 0.12, h/2 + spacing, 'User C');
         
-        // Create CDN (using new CDNNode class)
+        // Create CDN
         GameState.nodes['CDN1'] = new CDNNode(
             this, w * 0.12, h/2 - vertOffset * 1.2, 'CDN', 
             ECONOMICS_CONFIG.initialValues.cdnCapacity, 
             ECONOMICS_CONFIG.initialValues.cdnDelay
         );
         
-        // Create Load Balancer (using new LoadBalancerNode class)
+        // Create Load Balancer
         GameState.nodes['LoadBalancer1'] = new LoadBalancerNode(
             this, w * 0.27, h/2, 'Load Balancer', 
             ECONOMICS_CONFIG.initialValues.loadBalancerCapacity, 
             ECONOMICS_CONFIG.initialValues.loadBalancerDelay
         );
         
-        // Create App Servers (using new AppServerNode class)
+        // Create App Servers
         GameState.nodes['App1'] = new AppServerNode(
             this, w * 0.42, h/2 - smallSpacing, 'App Server 1', 
             ECONOMICS_CONFIG.initialValues.appServerCapacity, 
@@ -97,38 +99,46 @@ export class Level8Scene extends BaseLevelScene {
             ECONOMICS_CONFIG.initialValues.processingDelay
         );
         
-        // Create Cache (using new CacheNode class)
+        // Create Cache
         GameState.nodes['Cache1'] = new CacheNode(
             this, w * 0.58, h/2 - vertOffset, 'Cache', 
             ECONOMICS_CONFIG.initialValues.cacheCapacity, 
             ECONOMICS_CONFIG.initialValues.cacheDelay
         );
         
-        // Create Primary Database (using new DatabaseNode class)
+        // Create initial Pubsub Queue
+        GameState.nodes['Queue1'] = new PubsubQueueNode(
+            this, w * 0.58, h/2 + vertOffset * 0.5, 'Queue 1',
+            20, // capacity
+            200 // processing speed
+        );
+        this.queueCount = 1;
+        
+        // Create Primary Database
         GameState.nodes['Database1'] = new DatabaseNode(
-            this, w * 0.58, h/2, 'Primary DB', 
+            this, w * 0.74, h/2, 'Primary DB', 
             ECONOMICS_CONFIG.initialValues.databaseCapacity, 
             ECONOMICS_CONFIG.initialValues.databaseDelay
         );
     }
 
-    setupReadReplicaButton() {
+    setupQueueButton() {
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        const cost = ECONOMICS_CONFIG.purchases.readReplica;
+        const cost = 300; // Cost to add a queue
         
-        this.rrButtonBg = this.add.rectangle(
+        this.queueButtonBg = this.add.rectangle(
             w * 0.58, h - 50, 
             UI_CONFIG.buttons.large.width, 
             UI_CONFIG.buttons.large.height, 
             UI_CONFIG.buttonColors.warning
         );
-        this.rrButtonBg.setStrokeStyle(2, UI_CONFIG.buttonColors.warningHover);
-        this.rrButtonBg.setInteractive({ useHandCursor: true });
+        this.queueButtonBg.setStrokeStyle(2, UI_CONFIG.buttonColors.warningHover);
+        this.queueButtonBg.setInteractive({ useHandCursor: true });
         
-        this.rrButtonText = this.add.text(
+        this.queueButtonText = this.add.text(
             w * 0.58, h - 50, 
-            `+ Add Read Replica ($${cost})`, 
+            `+ Add Queue ($${cost})`, 
             {
                 fontSize: UI_CONFIG.fonts.button,
                 color: UI_CONFIG.textColors.light,
@@ -137,49 +147,50 @@ export class Level8Scene extends BaseLevelScene {
             }
         ).setOrigin(0.5);
         
-        this.rrButtonBg.on('pointerover', () => this.rrButtonBg.setFillStyle(UI_CONFIG.buttonColors.warningHover));
-        this.rrButtonBg.on('pointerout', () => this.rrButtonBg.setFillStyle(UI_CONFIG.buttonColors.warning));
-        this.rrButtonBg.on('pointerdown', () => this.addReadReplica());
+        this.queueButtonBg.on('pointerover', () => this.queueButtonBg.setFillStyle(UI_CONFIG.buttonColors.warningHover));
+        this.queueButtonBg.on('pointerout', () => this.queueButtonBg.setFillStyle(UI_CONFIG.buttonColors.warning));
+        this.queueButtonBg.on('pointerdown', () => this.addQueue());
     }
 
-    addReadReplica() {
-        const maxReplicas = ECONOMICS_CONFIG.limits.readReplicas;
+    addQueue() {
+        const maxQueues = 3;
         
-        if (this.readReplicaCount >= maxReplicas) {
-            this.showToast(`Maximum ${maxReplicas} Read Replicas!`);
+        if (this.queueCount >= maxQueues) {
+            this.showToast(`Maximum ${maxQueues} Queues!`);
             return;
         }
 
-        const cost = ECONOMICS_CONFIG.purchases.readReplica;
+        const cost = 300;
         if (GameState.money < cost) {
             this.showToast(`Not enough money! Need $${cost}`);
             return;
         }
 
         GameState.money -= cost;
-        this.readReplicaCount++;
+        this.queueCount++;
 
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
-        const spacing = LAYOUT_CONFIG.spacing.vertical.large;
-        const startY = h/2 + LAYOUT_CONFIG.spacing.vertical.medium;
+        const vertOffset = LAYOUT_CONFIG.spacing.vertical.extraLarge;
+        const spacing = LAYOUT_CONFIG.spacing.vertical.medium;
+        const startY = h/2 + vertOffset * 0.5;
         
-        // Create Read Replica (using new DatabaseNode class)
-        GameState.nodes[`ReadReplica${this.readReplicaCount}`] = new DatabaseNode(
-            this, w * 0.58, startY + (this.readReplicaCount - 1) * spacing,
-            `Read Replica ${this.readReplicaCount}`, 
-            ECONOMICS_CONFIG.initialValues.readReplicaCapacity, 
-            ECONOMICS_CONFIG.initialValues.readReplicaDelay
+        // Create new Queue
+        GameState.nodes[`Queue${this.queueCount}`] = new PubsubQueueNode(
+            this, w * 0.58, startY + (this.queueCount - 1) * spacing,
+            `Queue ${this.queueCount}`,
+            20, // capacity
+            200 // processing speed
         );
 
-        if (this.readReplicaCount >= maxReplicas) {
-            this.rrButtonText.setText('✓ Max Replicas');
-            this.rrButtonBg.setFillStyle(UI_CONFIG.buttonColors.disabled);
-            this.rrButtonBg.disableInteractive();
+        if (this.queueCount >= maxQueues) {
+            this.queueButtonText.setText('✓ Max Queues');
+            this.queueButtonBg.setFillStyle(UI_CONFIG.buttonColors.disabled);
+            this.queueButtonBg.disableInteractive();
         }
 
         this.updateUI();
-        this.showToast(`Read Replica ${this.readReplicaCount} added!`);
+        this.showToast(`Queue ${this.queueCount} added!`);
     }
 
     update() {
@@ -190,8 +201,9 @@ export class Level8Scene extends BaseLevelScene {
         const app1 = GameState.nodes['App1'];
         const app2 = GameState.nodes['App2'];
         const cache = GameState.nodes['Cache1'];
-        const primaryDb = GameState.nodes['Database1'];
+        const database = GameState.nodes['Database1'];
         
+        // Draw connections between users, CDN, and load balancer
         ['User1', 'User2', 'User3'].forEach(uid => {
             const user = GameState.nodes[uid];
             if (cdn) drawDualLines(this.graphics, user, cdn);
@@ -203,16 +215,17 @@ export class Level8Scene extends BaseLevelScene {
         if (lb && app2) drawDualLines(this.graphics, lb, app2);
         if (app1 && cache) drawDualLines(this.graphics, app1, cache);
         if (app2 && cache) drawDualLines(this.graphics, app2, cache);
-        if (app1 && primaryDb) drawDualLines(this.graphics, app1, primaryDb);
-        if (app2 && primaryDb) drawDualLines(this.graphics, app2, primaryDb);
+        if (cache && database) drawDualLines(this.graphics, cache, database);
+        if (app1 && database) drawDualLines(this.graphics, app1, database);
+        if (app2 && database) drawDualLines(this.graphics, app2, database);
         
-        // Draw connections to read replicas
-        for (let i = 1; i <= this.readReplicaCount; i++) {
-            const replica = GameState.nodes[`ReadReplica${i}`];
-            if (replica) {
-                if (app1) drawDualLines(this.graphics, app1, replica);
-                if (app2) drawDualLines(this.graphics, app2, replica);
-                if (primaryDb) drawDualLines(this.graphics, primaryDb, replica);
+        // Draw connections to queues
+        for (let i = 1; i <= this.queueCount; i++) {
+            const queue = GameState.nodes[`Queue${i}`];
+            if (queue) {
+                if (app1) drawDualLines(this.graphics, app1, queue);
+                if (app2) drawDualLines(this.graphics, app2, queue);
+                if (database) drawDualLines(this.graphics, queue, database);
             }
         }
     }
@@ -222,6 +235,7 @@ export class Level8Scene extends BaseLevelScene {
         let packet;
         
         if (isWrite) {
+            // Write request (diamond shape)
             const size = LAYOUT_CONFIG.packets.diamondSize;
             packet = this.add.graphics();
             packet.fillStyle(CONFIG.colors.packetReq, 1);
@@ -236,6 +250,7 @@ export class Level8Scene extends BaseLevelScene {
             packet.y = startNode.y;
             packet.isWrite = true;
         } else {
+            // Read request (circle)
             packet = this.add.circle(
                 startNode.x, startNode.y, 
                 LAYOUT_CONFIG.packets.circleRadius, 
