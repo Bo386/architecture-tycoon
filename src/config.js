@@ -612,7 +612,9 @@ export const CONFIG = {
         }
     },
     
-    level8Target: 1800          // Level 8: Testing read-write splitting with higher load
+    level8Target: 1800,         // Level 8: Testing read-write splitting with higher load
+    
+    level9Target: 2000          // Level 9: Testing pubsub queue with async write processing
 };
 
 /**

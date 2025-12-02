@@ -15,6 +15,7 @@ export { DatabaseNode } from './DatabaseNode.js';
 export { CacheNode } from './CacheNode.js';
 export { CDNNode } from './CDNNode.js';
 export { LoadBalancerNode } from './LoadBalancerNode.js';
+export { PubsubQueueNode } from './PubsubQueueNode.js';
 
 // Backward compatibility - still export ServerNode if needed
 export { ServerNode } from './ServerNode.js';

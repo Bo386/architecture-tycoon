@@ -82,9 +82,17 @@ export const SCENE_CONFIG = [
         key: 'Level8Scene',
         isLevel: true,
         levelNumber: 8,
-        title: 'Microservices',
+        title: 'Read Replicas',
+        nextLevel: 'Level9Scene',
+        description: 'Read/write separation with read replicas'
+    },
+    {
+        key: 'Level9Scene',
+        isLevel: true,
+        levelNumber: 9,
+        title: 'Message Queue',
         nextLevel: null,
-        description: 'Read/write separation with specialized services'
+        description: 'Asynchronous processing with Pubsub queues'
     }
 ];
 

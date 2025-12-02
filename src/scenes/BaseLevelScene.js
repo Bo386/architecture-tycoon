@@ -345,6 +345,22 @@ export class BaseLevelScene extends Phaser.Scene {
     }
 
     /**
+     * Show Toast Notification
+     * General purpose toast for any message
+     */
+    showToast(msg) {
+        this.showDifficultyToast(msg);
+    }
+
+    /**
+     * Update UI
+     * Wrapper for the updateUI utility function
+     */
+    updateUI() {
+        updateUI();
+    }
+
+    /**
      * Update Method
      * 
      * Called every frame by Phaser. Redraws connection lines between nodes.
@@ -459,7 +475,7 @@ export class BaseLevelScene extends Phaser.Scene {
         `;
         
         // Show next button if not last level
-        if (this.levelNumber < 8) {
+        if (this.levelNumber < 9) {
             btnNext.style.display = 'inline-block';
         } else {
             btnNext.style.display = 'none';

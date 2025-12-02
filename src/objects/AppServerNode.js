@@ -111,9 +111,21 @@ export class AppServerNode extends ProcessingNode {
 
     /**
      * Route Write to Database
-     * Writes always go to master database (Database1) if read-write splitting is enabled
+     * Writes go to Pubsub Queue if available (Level 9), otherwise to master database
      */
     routeWriteToDatabase(packet) {
+        // Check for Pubsub Queue first (Level 9)
+        const queues = this.getAvailableQueues();
+        
+        if (queues.length > 0) {
+            // Route to least loaded queue
+            const selectedQueue = this.selectLeastLoadedQueue(queues);
+            packet.appNode = this;
+            sendPacketAnim(this.scene, packet, selectedQueue, this);
+            return;
+        }
+        
+        // No queue available, use traditional routing
         const readReplica = GameState.nodes['ReadReplica1'];
         
         if (readReplica && readReplica.active) {
@@ -155,5 +167,37 @@ export class AppServerNode extends ProcessingNode {
             .filter(key => key.startsWith('Database'))
             .map(key => GameState.nodes[key])
             .filter(db => db && db.active);
+    }
+
+    /**
+     * Get Available Queues
+     */
+    getAvailableQueues() {
+        return Object.keys(GameState.nodes)
+            .filter(key => key.startsWith('Queue'))
+            .map(key => GameState.nodes[key])
+            .filter(queue => queue && queue.active);
+    }
+
+    /**
+     * Select Least Loaded Queue
+     * Returns the queue with the most available capacity
+     */
+    selectLeastLoadedQueue(queues) {
+        if (queues.length === 1) return queues[0];
+        
+        // Find queue with smallest message queue
+        let minLoad = Infinity;
+        let selectedQueue = queues[0];
+        
+        for (const queue of queues) {
+            const load = queue.messageQueue ? queue.messageQueue.length : 0;
+            if (load < minLoad) {
+                minLoad = load;
+                selectedQueue = queue;
+            }
+        }
+        
+        return selectedQueue;
     }
 }

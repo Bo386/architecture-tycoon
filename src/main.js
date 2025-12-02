@@ -26,6 +26,7 @@ import { Level5Scene } from './scenes/Level5Scene.js';
 import { Level6Scene } from './scenes/Level6Scene.js';
 import { Level7Scene } from './scenes/Level7Scene.js';
 import { Level8Scene } from './scenes/Level8Scene.js';
+import { Level9Scene } from './scenes/Level9Scene.js';
 
 /**
  * Phaser Game Configuration Object
@@ -54,7 +55,7 @@ const gameConfig = {
      * Scenes are the different "screens" or "levels" of the game
      * First scene in array (WelcomeScene) will be the default starting scene
      */
-    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene]
+    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene, Level9Scene]
 };
 
 /**
@@ -254,7 +255,7 @@ function setupEventHandlers() {
     if (levelSelector) {
         levelSelector.addEventListener('change', (event) => {
             const selectedLevel = parseInt(event.target.value);
-            if (selectedLevel && selectedLevel >= 1 && selectedLevel <= 8) {
+            if (selectedLevel && selectedLevel >= 1 && selectedLevel <= 9) {
                 sceneManager.switchToLevel(selectedLevel);
                 // Reset dropdown to default
                 setTimeout(() => { levelSelector.value = ''; }, 100);
