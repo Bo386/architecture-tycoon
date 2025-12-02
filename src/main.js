@@ -18,6 +18,7 @@ import { SceneManager } from './managers/SceneManager.js';
 import { SCENE_CONFIG } from './config/sceneConfig.js';
 // Import all game scenes
 import { WelcomeScene } from './scenes/WelcomeScene.js';
+import { ChapterSelectScene } from './scenes/ChapterSelectScene.js';
 import { Level1Scene } from './scenes/Level1Scene.js';
 import { Level2Scene } from './scenes/Level2Scene.js';
 import { Level3Scene } from './scenes/Level3Scene.js';
@@ -55,7 +56,7 @@ const gameConfig = {
      * Scenes are the different "screens" or "levels" of the game
      * First scene in array (WelcomeScene) will be the default starting scene
      */
-    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene, Level9Scene]
+    scene: [WelcomeScene, ChapterSelectScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene, Level9Scene]
 };
 
 /**

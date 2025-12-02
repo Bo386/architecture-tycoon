@@ -1,101 +1,173 @@
 /**
  * Welcome Scene
  * 
- * This is the initial welcome/splash screen shown when the game first loads.
- * It displays the game title and allows the player to start the first level.
- * 
- * Key responsibilities:
- * - Display game title and subtitle
- * - Show interactive "Start Challenge" button
- * - Hide the game UI elements (sidebar, control panel) until level starts
- * - Transition to Level1Scene when player clicks start
+ * Beautiful welcome screen with modern design.
+ * Shows game title, tagline, and start button.
+ * No header elements are displayed on this screen.
  */
 
 export class WelcomeScene extends Phaser.Scene {
-    /**
-     * Constructor
-     * 
-     * Initializes the scene with a unique key identifier.
-     * The key is used to reference this scene when starting/stopping it.
-     */
     constructor() {
         super({ key: 'WelcomeScene' });
     }
 
-    /**
-     * Create Method
-     * 
-     * Called automatically by Phaser when the scene starts.
-     * Sets up all visual elements and interactive components for the welcome screen.
-     */
     create() {
-        // Get the camera dimensions to center elements on screen
         const w = this.cameras.main.width;
         const h = this.cameras.main.height;
         
-        /**
-         * Main Title
-         * Large, bold title text positioned in the upper third of the screen
-         */
-        this.add.text(w/2, h/3, 'Architecture Tycoon', { 
-            fontSize: '48px', 
-            color: '#4fc1ff',      // Cyan color matching the theme
-            fontStyle: 'bold' 
-        }).setOrigin(0.5);           // Center the text horizontally and vertically
+        // Make main-content fullscreen
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.style.position = 'fixed';
+            mainContent.style.top = '0';
+            mainContent.style.left = '0';
+            mainContent.style.width = '100vw';
+            mainContent.style.height = '100vh';
+            mainContent.style.zIndex = '1000';
+        }
         
-        /**
-         * Subtitle
-         * Displays the first level name below the title
-         */
-        this.add.text(w/2, h/3 + 60, 'Level 1: Vertical Scaling', { 
-            fontSize: '20px', 
-            color: '#aaa'           // Light gray, less prominent than title
-        }).setOrigin(0.5);
+        // Hide all header UI elements
+        this.hideHeader();
         
-        /**
-         * Start Button Background
-         * Interactive rectangle that acts as the button background
-         * useHandCursor: true shows the pointer cursor when hovering
-         */
-        const btn = this.add.rectangle(w/2, h/2 + 60, 200, 60, 0x0e639c)
-            .setInteractive({ useHandCursor: true });
-        
-        /**
-         * Start Button Text
-         * Text label overlaid on the button background
-         */
-        this.add.text(w/2, h/2 + 60, 'Start Challenge', { 
-            fontSize: '24px', 
-            color: '#fff'           // White text for good contrast
-        }).setOrigin(0.5);
-        
-        /**
-         * Button Interactions
-         * Set up hover effects and click handler
-         */
-        
-        // Hover effect - lighten button color when mouse is over it
-        btn.on('pointerover', () => btn.fillColor = 0x1177bb);
-        
-        // Unhover effect - restore original color when mouse leaves
-        btn.on('pointerout', () => btn.fillColor = 0x0e639c);
-        
-        // Click handler - transition to Level 1 when button is clicked
-        btn.on('pointerdown', () => this.scene.start('Level1Scene'));
-        
-        /**
-         * Hide Game UI Elements
-         * 
-         * The HTML UI (sidebar and control panel) should not be visible
-         * on the welcome screen. They'll be shown when the level starts.
-         */
+        // Hide game UI elements
         const leftSidebar = document.getElementById('left-sidebar');
         const controlPanel = document.getElementById('control-panel');
         
-        // Hide sidebar if it exists in the DOM
         if (leftSidebar) leftSidebar.style.display = 'none';
-        
-        // Hide control panel if it exists in the DOM
         if (controlPanel) controlPanel.style.display = 'none';
+        
+        // Dark background
+        this.add.rectangle(0, 0, w, h, 0x0f0f1e).setOrigin(0);
+        
+        // Decorative background pattern
+        this.createBackgroundPattern();
+        
+        // Main title with glow effect
+        const title = this.add.text(w/2, h * 0.35, 'Architecture Tycoon', { 
+            fontSize: '64px', 
+            color: '#4fc1ff',
+            fontStyle: 'bold',
+            fontFamily: 'Arial'
+        }).setOrigin(0.5);
+        
+        // Add subtle shadow effect
+        title.setShadow(0, 0, '#1a8acc', 20, true, true);
+        
+        // Tagline
+        this.add.text(w/2, h * 0.35 + 70, 'Master the Art of System Design', { 
+            fontSize: '24px', 
+            color: '#aaaaaa',
+            fontFamily: 'Arial',
+            fontStyle: 'italic'
+        }).setOrigin(0.5);
+        
+        // Feature highlights
+        const features = [
+            '🏗️  Build scalable architectures',
+            '⚡  Optimize performance',
+            '🎯  Complete challenges'
+        ];
+        
+        features.forEach((feature, index) => {
+            this.add.text(w/2, h * 0.55 + (index * 35), feature, { 
+                fontSize: '18px', 
+                color: '#888888',
+                fontFamily: 'Arial'
+            }).setOrigin(0.5);
+        });
+        
+        // Start button with modern design
+        this.createStartButton(w/2, h * 0.75);
+        
+        // Version/credits at bottom
+        this.add.text(w/2, h - 30, 'v1.0 | Learn System Design Through Play', { 
+            fontSize: '14px', 
+            color: '#555555',
+            fontFamily: 'Arial'
+        }).setOrigin(0.5);
+    }
+    
+    createBackgroundPattern() {
+        const w = this.cameras.main.width;
+        const h = this.cameras.main.height;
+        
+        // Create subtle grid pattern
+        const graphics = this.add.graphics();
+        graphics.lineStyle(1, 0x1a1a2e, 0.3);
+        
+        const gridSize = 50;
+        for (let x = 0; x < w; x += gridSize) {
+            graphics.lineBetween(x, 0, x, h);
+        }
+        for (let y = 0; y < h; y += gridSize) {
+            graphics.lineBetween(0, y, w, y);
+        }
+        
+        // Add some decorative circles
+        graphics.lineStyle(2, 0x4fc1ff, 0.1);
+        graphics.strokeCircle(w * 0.2, h * 0.3, 100);
+        graphics.strokeCircle(w * 0.8, h * 0.7, 150);
+        graphics.strokeCircle(w * 0.9, h * 0.2, 80);
+    }
+    
+    createStartButton(x, y) {
+        const buttonWidth = 280;
+        const buttonHeight = 70;
+        
+        // Button background with gradient-like effect
+        const btnBg = this.add.rectangle(x, y, buttonWidth, buttonHeight, 0x0e639c)
+            .setInteractive({ useHandCursor: true });
+        
+        // Button border for depth
+        const btnBorder = this.add.rectangle(x, y, buttonWidth + 4, buttonHeight + 4)
+            .setStrokeStyle(2, 0x4fc1ff, 0.5);
+        btnBorder.setDepth(-1);
+        
+        // Button text
+        const btnText = this.add.text(x, y, 'Start Your Journey', { 
+            fontSize: '28px', 
+            color: '#ffffff',
+            fontStyle: 'bold',
+            fontFamily: 'Arial'
+        }).setOrigin(0.5);
+        
+        // Hover effects
+        btnBg.on('pointerover', () => {
+            btnBg.fillColor = 0x1177bb;
+            btnBorder.setStrokeStyle(3, 0x6fd9ff, 1);
+            btnText.setScale(1.05);
+        });
+        
+        btnBg.on('pointerout', () => {
+            btnBg.fillColor = 0x0e639c;
+            btnBorder.setStrokeStyle(2, 0x4fc1ff, 0.5);
+            btnText.setScale(1);
+        });
+        
+        // Click handler - go to chapter selection
+        btnBg.on('pointerdown', () => {
+            // Add a slight animation before transition
+            this.tweens.add({
+                targets: btnBg,
+                scaleX: 0.95,
+                scaleY: 0.95,
+                duration: 100,
+                yoyo: true,
+                onComplete: () => {
+                    this.scene.start('ChapterSelectScene');
+                }
+            });
+        });
+    }
+    
+    hideHeader() {
+        // Hide the header bar completely
+        const header = document.getElementById('header');
+        const levelSelector = document.getElementById('level-selector');
+        const legend = document.querySelector('.legend-box');
+        
+        if (header) header.style.display = 'none';
+        if (levelSelector) levelSelector.style.display = 'none';
+        if (legend) legend.style.display = 'none';
     }
 }

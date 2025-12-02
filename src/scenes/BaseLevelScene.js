@@ -53,11 +53,31 @@ export class BaseLevelScene extends Phaser.Scene {
      * Sets up the entire level including UI, background, nodes, and initial state.
      */
     create() {
+        // Restore normal layout - reset main-content from fullscreen
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.style.position = '';
+            mainContent.style.top = '';
+            mainContent.style.left = '';
+            mainContent.style.width = '';
+            mainContent.style.height = '';
+            mainContent.style.zIndex = '';
+        }
+        
         // Show Game UI Elements
         const leftSidebar = document.getElementById('left-sidebar');
         const controlPanel = document.getElementById('control-panel');
         if (leftSidebar) leftSidebar.style.display = 'flex';
         if (controlPanel) controlPanel.style.display = 'flex';
+        
+        // Show header elements
+        const header = document.getElementById('header');
+        const levelSelector = document.getElementById('level-selector');
+        const legend = document.querySelector('.legend-box');
+        
+        if (header) header.style.display = 'flex';
+        if (levelSelector) levelSelector.style.display = 'block';
+        if (legend) legend.style.display = 'flex';
         
         // Ensure result modal is hidden at start
         document.getElementById('result-modal').style.display = 'none';
