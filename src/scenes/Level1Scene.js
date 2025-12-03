@@ -25,6 +25,7 @@ import { CONFIG, GameState } from '../config.js';
 import { LAYOUT_CONFIG, ECONOMICS_CONFIG } from '../config/index.js';
 import { UserNode, AppServerNode } from '../objects/nodes.js';
 import { BaseLevelScene } from './BaseLevelScene.js';
+import { StoryManager } from '../utils/StoryManager.js';
 
 export class Level1Scene extends BaseLevelScene {
     /**
@@ -83,6 +84,42 @@ export class Level1Scene extends BaseLevelScene {
                     message: "⛔ Extreme pressure! System near collapse!"
                 }
             }
+        });
+        
+        this.storyManager = null;
+    }
+
+    /**
+     * Create method - called after constructor
+     * Initializes the story introduction before starting the level
+     */
+    create() {
+        // Call parent create first
+        super.create();
+        
+        // Initialize story manager
+        this.storyManager = new StoryManager(this);
+        
+        // Define story pages
+        const storyPages = [
+            "Welcome to Architecture Tycoon!\n\nYou are a system architect tasked with building\nand scaling web applications.",
+            
+            "Your first client has launched a simple web service.\nIt's running on a single server with limited capacity.",
+            
+            "As their architect, you need to ensure the system\ncan handle growing user traffic without failures.",
+            
+            "Your Mission:\n• Handle 100 user requests\n• Keep error rate below 1%\n• Upgrade the server when needed",
+            
+            "Use the 'Upgrade Server' button to increase capacity.\nBut watch your budget - upgrades cost money!",
+            
+            "Click the green 'Start' button when ready.\nGood luck, Architect!"
+        ];
+        
+        // Show story introduction
+        this.storyManager.show(storyPages, () => {
+            // Story completed - game is ready to start
+            // User can now click the Start button
+            console.log('Story introduction completed');
         });
     }
 
