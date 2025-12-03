@@ -43,7 +43,7 @@ export class Level2Scene extends BaseLevelScene {
             initialTrafficDelay: 1800,
             initialPacketsPerWave: 1,
             difficultyInterval: 10000,
-            userNodeIds: ['User1', 'User2', 'User3'],
+            userNodeIds: ['User1'],
             difficultyStages: {
                 stage1: {
                     trafficDelay: 1500,
@@ -87,15 +87,9 @@ export class Level2Scene extends BaseLevelScene {
         const h = this.cameras.main.height;
         const spacing = LAYOUT_CONFIG.spacing.vertical.medium;
 
-        // Create User Nodes (using new UserNode class)
+        // Create User Node (using new UserNode class)
         GameState.nodes['User1'] = new UserNode(
-            this, w * 0.15, h/2 - spacing, 'User A'
-        );
-        GameState.nodes['User2'] = new UserNode(
-            this, w * 0.15, h/2, 'User B'
-        );
-        GameState.nodes['User3'] = new UserNode(
-            this, w * 0.15, h/2 + spacing, 'User C'
+            this, w * 0.15, h/2, 'User'
         );
         
         // Create Application Server (using new AppServerNode class)
@@ -131,11 +125,11 @@ export class Level2Scene extends BaseLevelScene {
         const app = GameState.nodes['App'];
         const database = GameState.nodes['Database'];
         
-        // Draw User → App connections
-        ['User1', 'User2', 'User3'].forEach(uid => {
-            const user = GameState.nodes[uid];
+        // Draw User → App connection
+        const user = GameState.nodes['User1'];
+        if (user) {
             drawDualLines(this.graphics, user, app);
-        });
+        }
         
         // Draw App → Database connection
         if (database) {

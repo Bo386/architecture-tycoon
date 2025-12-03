@@ -97,7 +97,6 @@ export class BaseLevelScene extends Phaser.Scene {
         // Set up visual elements and create server nodes
         this.setupBackground();
         this.createNodes(); // Must be implemented by child classes
-        this.setupZoom();
         this.setupCameraDrag();
     }
 
@@ -166,8 +165,8 @@ export class BaseLevelScene extends Phaser.Scene {
     updateCameraDrag(pointer) {
         const deltaX = pointer.x - this.dragStartX;
         const deltaY = pointer.y - this.dragStartY;
-        this.cameras.main.scrollX = this.cameraStartX - deltaX / this.currentZoom;
-        this.cameras.main.scrollY = this.cameraStartY - deltaY / this.currentZoom;
+        this.cameras.main.scrollX = this.cameraStartX - deltaX;
+        this.cameras.main.scrollY = this.cameraStartY - deltaY;
     }
 
     /**
@@ -178,48 +177,6 @@ export class BaseLevelScene extends Phaser.Scene {
         this.input.setDefaultCursor('default');
     }
 
-    /**
-     * Setup Zoom Controls
-     */
-    setupZoom() {
-        this.cameras.main.setZoom(1);
-        this.currentZoom = 1;
-        this.minZoom = 0.5;
-        this.maxZoom = 2.0;
-
-        // Enable mouse wheel zoom
-        this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
-            const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
-            this.adjustZoom(zoomDelta);
-        });
-    }
-
-    /**
-     * Adjust Zoom Level
-     */
-    adjustZoom(delta) {
-        this.currentZoom += delta;
-        this.currentZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.currentZoom));
-        this.cameras.main.setZoom(this.currentZoom);
-        
-        const zoomDisplay = document.getElementById('zoom-level');
-        if (zoomDisplay) {
-            zoomDisplay.textContent = Math.round(this.currentZoom * 100) + '%';
-        }
-    }
-
-    /**
-     * Reset Zoom to Default
-     */
-    resetZoom() {
-        this.currentZoom = 1;
-        this.cameras.main.setZoom(1);
-        
-        const zoomDisplay = document.getElementById('zoom-level');
-        if (zoomDisplay) {
-            zoomDisplay.textContent = '100%';
-        }
-    }
 
     /**
      * Setup Background Graphics

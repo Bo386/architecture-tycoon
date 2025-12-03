@@ -42,6 +42,30 @@ export class AppServerNode extends ProcessingNode {
         }
         // App receives request from user - route based on architecture
         else {
+            // Check if database exists in this level
+            const databases = this.getAvailableDatabases();
+            const hasDatabase = databases.length > 0;
+            
+            // Level 1 (Monolithic): No database, handle everything internally
+            if (!hasDatabase) {
+                // Process the request and respond immediately
+                packet.isResponse = true;
+                
+                if (packet.setFillStyle) {
+                    packet.setFillStyle(CONFIG.colors.packetRes);
+                } else if (packet.setTint) {
+                    packet.setTint(CONFIG.colors.packetRes);
+                }
+                
+                if (packet.sourceNode && packet.sourceNode.active) {
+                    sendPacketAnim(this.scene, packet, packet.sourceNode, this);
+                } else {
+                    packet.destroy();
+                }
+                return;
+            }
+            
+            // Level 2+: Route to appropriate backend based on request type
             // Check if this is a cache miss returning to app
             if (packet.cacheMissed) {
                 packet.cacheMissed = false;
@@ -78,31 +102,11 @@ export class AppServerNode extends ProcessingNode {
                         packet.appNode = this;
                         sendPacketAnim(this.scene, packet, readReplica, this);
                     } else {
-                        // Find available databases
-                        const databases = this.getAvailableDatabases();
-                        
-                        if (databases.length > 0) {
-                            // Level 2+: Route to database
-                            const randomIndex = Math.floor(Math.random() * databases.length);
-                            const selectedDatabase = databases[randomIndex];
-                            packet.appNode = this;
-                            sendPacketAnim(this.scene, packet, selectedDatabase, this);
-                        } else {
-                            // Level 1: Monolithic - respond directly
-                            packet.isResponse = true;
-                            
-                            if (packet.setFillStyle) {
-                                packet.setFillStyle(CONFIG.colors.packetRes);
-                            } else if (packet.setTint) {
-                                packet.setTint(CONFIG.colors.packetRes);
-                            }
-                            
-                            if (packet.sourceNode && packet.sourceNode.active) {
-                                sendPacketAnim(this.scene, packet, packet.sourceNode, this);
-                            } else {
-                                packet.destroy();
-                            }
-                        }
+                        // Route to database
+                        const randomIndex = Math.floor(Math.random() * databases.length);
+                        const selectedDatabase = databases[randomIndex];
+                        packet.appNode = this;
+                        sendPacketAnim(this.scene, packet, selectedDatabase, this);
                     }
                 }
             }

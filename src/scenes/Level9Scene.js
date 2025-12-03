@@ -41,7 +41,7 @@ export class Level9Scene extends BaseLevelScene {
             initialTrafficDelay: 1000,
             initialPacketsPerWave: 2,
             difficultyInterval: 6500,
-            userNodeIds: ['User1', 'User2', 'User3'],
+            userNodeIds: ['User1'],
             difficultyStages: {
                 stage1: { trafficDelay: 800, packetsPerWave: 2, message: "Traffic increasing..." },
                 stage2: { trafficDelay: 600, packetsPerWave: 3, message: "Load rising..." },
@@ -68,10 +68,8 @@ export class Level9Scene extends BaseLevelScene {
         const smallSpacing = LAYOUT_CONFIG.spacing.vertical.small;
         const vertOffset = LAYOUT_CONFIG.spacing.vertical.extraLarge;
 
-        // Create User Nodes
-        GameState.nodes['User1'] = new UserNode(this, w * 0.12, h/2 - spacing, 'User A');
-        GameState.nodes['User2'] = new UserNode(this, w * 0.12, h/2, 'User B');
-        GameState.nodes['User3'] = new UserNode(this, w * 0.12, h/2 + spacing, 'User C');
+        // Create User Node
+        GameState.nodes['User1'] = new UserNode(this, w * 0.12, h/2, 'User');
         
         // Create CDN
         GameState.nodes['CDN1'] = new CDNNode(
@@ -203,12 +201,12 @@ export class Level9Scene extends BaseLevelScene {
         const cache = GameState.nodes['Cache1'];
         const database = GameState.nodes['Database1'];
         
-        // Draw connections between users, CDN, and load balancer
-        ['User1', 'User2', 'User3'].forEach(uid => {
-            const user = GameState.nodes[uid];
+        // Draw connections between user, CDN, and load balancer
+        const user = GameState.nodes['User1'];
+        if (user) {
             if (cdn) drawDualLines(this.graphics, user, cdn);
             if (lb) drawDualLines(this.graphics, user, lb);
-        });
+        }
         
         if (cdn && lb) drawDualLines(this.graphics, cdn, lb);
         if (lb && app1) drawDualLines(this.graphics, lb, app1);

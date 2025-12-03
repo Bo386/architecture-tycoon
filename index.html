@@ -127,42 +127,37 @@
                     Budget: $<span id="ui-money">500</span>
                 </div>
                 
-                <!-- Button Group: Main control buttons for game actions -->
-                <div class="button-group">
-                    <!-- Start/Pause Button: Initiates/Pauses/Resumes the simulation -->
-                    <button id="btn-start" class="start">
-                        <span>▶ Start</span>
-                    </button>
+                <!-- Common Controls Section: Always visible control buttons -->
+                <div class="controls-section">
+                    <div class="section-label">Common Controls</div>
+                    <div class="button-group">
+                        <!-- Start/Pause Button: Initiates/Pauses/Resumes the simulation -->
+                        <button id="btn-start" class="start">
+                            <span>▶ Start</span>
+                        </button>
 
-                    <!-- Upgrade Button: Improves server capacity (costs $200) -->
-                    <!-- Disabled by default, enabled when simulation starts and player has enough money -->
-                    <button id="btn-upgrade" class="upgrade" disabled>
-                        <span>⬆ Upgrade Server ($200)</span>
-                    </button>
+                        <!-- Reset Button: Restarts the current level from the beginning -->
+                        <button id="btn-reset" class="reset">
+                            <span>↺ Reset</span>
+                        </button>
 
-                    <!-- Reset Button: Restarts the current level from the beginning -->
-                    <button id="btn-reset" class="reset">
-                        <span>↺ Reset</span>
-                    </button>
-
-                    <!-- Skip Button: Allows player to bypass the current level (for testing/debugging) -->
-                    <button id="btn-skip" class="skip">
-                        <span>⏭ Skip Level</span>
-                    </button>
+                        <!-- Skip Button: Allows player to bypass the current level (for testing/debugging) -->
+                        <button id="btn-skip" class="skip">
+                            <span>⏭ Skip Level</span>
+                        </button>
+                    </div>
                 </div>
                 
-                <!-- Zoom Controls: Canvas zoom in/out controls -->
-                <div class="button-group" style="margin-top: 10px; gap: 5px;">
-                    <button id="btn-zoom-out" class="upgrade" style="padding: 8px 12px;">
-                        <span>🔍−</span>
-                    </button>
-                    <span id="zoom-level" style="color: #fff; padding: 8px 12px; background: rgba(0,0,0,0.3); border-radius: 4px; min-width: 60px; text-align: center;">100%</span>
-                    <button id="btn-zoom-in" class="upgrade" style="padding: 8px 12px;">
-                        <span>🔍+</span>
-                    </button>
-                    <button id="btn-zoom-reset" class="reset" style="padding: 8px 12px;">
-                        <span>Reset Zoom</span>
-                    </button>
+                <!-- Level-Specific Controls Section: Varies by level -->
+                <div class="controls-section" id="level-specific-controls">
+                    <div class="section-label">Level Controls</div>
+                    <div class="button-group" id="level-buttons">
+                        <!-- Level-specific buttons will be added here dynamically -->
+                        <!-- For Level 1: Upgrade Server button -->
+                        <button id="btn-upgrade" class="upgrade" disabled>
+                            <span>⬆ Upgrade Server ($200)</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

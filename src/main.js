@@ -267,30 +267,5 @@ function setupEventHandlers() {
         console.error('Level selector element not found!');
     }
 
-    /**
-     * Zoom In Button Handler
-     * 
-     * Increases the camera zoom level (zoom in).
-     */
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-        sceneManager.executeOnActive('adjustZoom', 0.1);
-    });
-
-    /**
-     * Zoom Out Button Handler
-     * 
-     * Decreases the camera zoom level (zoom out).
-     */
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-        sceneManager.executeOnActive('adjustZoom', -0.1);
-    });
-
-    /**
-     * Reset Zoom Button Handler
-     * 
-     * Resets the camera zoom to 100% (default).
-     */
-    document.getElementById('btn-zoom-reset').addEventListener('click', () => {
-        sceneManager.executeOnActive('resetZoom');
-    });
+    console.log('Event handlers setup complete');
 }

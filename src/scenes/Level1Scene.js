@@ -40,7 +40,7 @@ export class Level1Scene extends BaseLevelScene {
             initialTrafficDelay: 1500,
             initialPacketsPerWave: 1,
             difficultyInterval: 8000,
-            userNodeIds: ['User1', 'User2', 'User3'],
+            userNodeIds: ['User1'],
             difficultyStages: {
                 stage1: {
                     trafficDelay: 1250,
@@ -100,15 +100,9 @@ export class Level1Scene extends BaseLevelScene {
         const serverX = w * LAYOUT_CONFIG.positions.appServer.x;
         const spacing = LAYOUT_CONFIG.spacing.vertical.medium;
 
-        // Create User Nodes (using new UserNode class)
+        // Create User Node (using new UserNode class)
         GameState.nodes['User1'] = new UserNode(
-            this, userX, h/2 - spacing, 'User A'
-        );
-        GameState.nodes['User2'] = new UserNode(
-            this, userX, h/2, 'User B'
-        );
-        GameState.nodes['User3'] = new UserNode(
-            this, userX, h/2 + spacing, 'User C'
+            this, userX, h/2, 'User'
         );
         
         // Create Application Server (using new AppServerNode class)
