@@ -190,12 +190,21 @@ function setupEventHandlers() {
      * Purchases an upgrade for the main application server.
      * Only works if player has enough money (checked before executing).
      * Deducts money, upgrades the server capacity, and updates the UI.
+     * Uses level-specific upgrade costs when available.
      */
     document.getElementById('btn-upgrade').addEventListener('click', () => {
+        // Get level-specific upgrade cost
+        let upgradeCost = CONFIG.upgradeCost; // Default cost
+        
+        // Level 1 has a special upgrade cost
+        if (GameState.currentLevel === 1 && CONFIG.level1 && CONFIG.level1.servers && CONFIG.level1.servers.app) {
+            upgradeCost = CONFIG.level1.servers.app.upgradeCost;
+        }
+        
         // Check if player has sufficient funds for upgrade
-        if (GameState.money >= CONFIG.upgradeCost) {
+        if (GameState.money >= upgradeCost) {
             // Deduct the upgrade cost from player's money
-            GameState.money -= CONFIG.upgradeCost;
+            GameState.money -= upgradeCost;
             
             // Find all app servers (supports both single 'App' and multiple 'App1', 'App2', etc.)
             const appServers = Object.keys(GameState.nodes)

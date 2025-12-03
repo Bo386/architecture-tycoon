@@ -4,6 +4,22 @@
 
 **Architecture Tycoon** is an innovative educational simulation game designed to teach software engineers core principles of system architecture design through interactive gameplay. Unlike traditional theoretical learning, players will build and scale a real system architecture from scratch, learning through practice and growing through challenges.
 
+### 📖 Story Background
+
+**Your Journey: From Full-Stack Developer to CTO**
+
+Welcome to **InstaBuy** (即时购) - your startup e-commerce platform that's about to experience explosive growth! You begin as a full-stack developer working from your dorm room, and through 9 levels of architectural challenges, you'll grow into a Chief Technology Officer managing a high-traffic distributed system.
+
+**The Mission:**
+- Start with a simple MVP running on your laptop
+- Scale to handle thousands of concurrent users
+- Navigate through real-world growth challenges
+- Make smart architectural decisions within budget constraints
+- Ultimately ring the NASDAQ opening bell! 🔔
+
+**Core Loop:**
+Traffic Growth → System Bottleneck → Architecture Upgrade → Profit → Next Growth Wave
+
 ### Core Philosophy
 
 **Learn from Practice, Master Architecture Through Gaming**
@@ -73,20 +89,38 @@ Through beautiful animations and graphics:
 
 The game contains 9 carefully designed levels, each teaching specific architecture concepts:
 
-### Level 1: Monolithic Architecture
+### Level 1: The MVP (单体架构)
 
-**Learning Objective**: Understand Vertical Scaling
+**📅 Stage**: Cloud Startup
+
+**📖 Story Briefing**:
+
+> "Hey! InstaBuy 1.0 is live! You rented the cheapest cloud server you could find. Only a few classmates are testing it now. Both the app and database run on this budget server. Start earning revenue to upgrade!"
+
+**Learning Objective**: Understand Vertical Scaling and Revenue Management
 
 **Scenario**:
-- You have a simple application server handling all user requests
-- A single user node continuously sends requests
-- Server has fixed processing capacity
+- Your MVP running on a budget cloud server
+- A few early users (classmates) testing your e-commerce platform
+- Limited computing resources (both app and data on one machine)
+- Earn revenue from successful transactions
 
 **Challenge**:
-- Process 100 requests
-- Initial server capacity: 5 concurrent requests
-- Initial budget: $500
-- Upgrade cost: $200/upgrade
+- Complete 100 user requests
+- Keep failure rate below 10%
+- Initial server capacity: 3 concurrent requests
+- Starting budget: $100
+- Revenue: $1 per successful request
+
+**Economic System**:
+- **Server Upgrade Cost**: $150
+- **Upgrade Benefits**: 
+  - Processing speed: 2x faster
+  - Concurrent capacity: 3 → 5 requests
+- **Revenue Model**: Successful requests generate $1 each
+- **Budget Carry-over**: Remaining funds transfer to next level
+
+**⚠️ Problem**: Single machine resources exhausted, cannot handle both computation and storage simultaneously. Failed requests mean lost revenue!
 
 **Core Concepts**:
 - **Vertical Scaling**: Improve performance by upgrading a single server
@@ -106,19 +140,27 @@ User ──→ Application Server
 
 ---
 
-### Level 2: Database Integration
+### Level 2: Database Integration (数据库集成)
+
+**📅 Stage**: Official Launch
+
+**📖 Story Briefing**:
+
+> "Users are complaining about data loss! We're still storing data in memory, so whenever we restart the server, shopping carts disappear. Buy a dedicated database server and save data to disk. Data is money!"
 
 **Learning Objective**: Understand Three-tier Architecture and Data Persistence
 
 **Scenario**:
-- Introduce independent database layer
-- Application server needs to interact with database
-- Write requests write to database, adding latency
+- Users experiencing data loss after server restarts
+- Need persistent storage for shopping carts and orders
+- Separate database server from application logic
 
 **Challenge**:
 - Process 100 requests (mixed read/write)
 - Database becomes new bottleneck
 - Manage database storage and speed
+
+**⚠️ Problem**: Application logic and database I/O competing for resources, system response slowing down
 
 **Core Concepts**:
 - **Three-tier Architecture**: Separation of presentation, business logic, and data access layers
@@ -138,19 +180,27 @@ User ──→ Application Server ──→ Database
 
 ---
 
-### Level 3: Database Scaling
+### Level 3: Database Scaling (数据库水平扩展)
+
+**📅 Stage**: User Growth Period
+
+**📖 Story Briefing**:
+
+> "User count is surging! The app server is holding up fine, but the database is swamped - query queues are getting long. A single database has hit its limit. We need more database instances to share the query load!"
 
 **Learning Objective**: Database Horizontal Scaling and Master-Slave Replication
 
 **Scenario**:
-- Can add database slave nodes (Read Replicas)
-- Read requests distributed to slave nodes
-- Write requests still go to master node
+- Exponential user growth
+- Database becoming the bottleneck
+- App server capacity sufficient
 
 **Challenge**:
 - Process 1000 requests
 - Add database replicas to distribute read load
 - Understand how master-slave replication works
+
+**⚠️ Problem**: Single database node becomes bottleneck, read/write requests queuing up
 
 **Core Concepts**:
 - **Horizontal Scaling**: Improve performance by adding more servers
@@ -173,19 +223,27 @@ App Server ──→ Master DB ──┼→ Slave Database 2 (Read)
 
 ---
 
-### Level 4: App Server Scaling
+### Level 4: App Server Scaling (应用服务器扩展)
+
+**📅 Stage**: Promotion Campaign Period
+
+**📖 Story Briefing**:
+
+> "Database is fine now, but the app server's CPU is smoking! Complex business logic (calculating discounts, inventory validation) is maxing out the CPU. Make the app 'stateless', then add more app servers. We need a human wave attack!"
 
 **Learning Objective**: Application Layer Horizontal Scaling
 
 **Scenario**:
-- Can add multiple application servers
-- User requests distributed across different app servers
-- Each server processes requests independently
+- Flash sale promotion driving high traffic
+- CPU overload from business logic processing
+- Database can handle the load
 
 **Challenge**:
 - Process 1200 requests
 - Deploy multiple app server instances
 - Balance load across servers
+
+**⚠️ Problem**: Insufficient computing resources, web response timeouts
 
 **Core Concepts**:
 - **Stateless Services**: App servers don't store session state
@@ -207,19 +265,27 @@ User ──┼→ App Server 2 ┼──→ Database
 
 ---
 
-### Level 5: Cache Layer
+### Level 5: Cache Layer (缓存层)
+
+**📅 Stage**: Performance Optimization Period
+
+**📖 Story Briefing**:
+
+> "Wait! I noticed 80% of requests are querying the same 'hot products'. Reading from disk every time is wasteful - the database is getting hammered again. Introduce a cache server. Put hot data in memory and stop bothering the database!"
 
 **Learning Objective**: Using Cache to Optimize Performance
 
 **Scenario**:
-- Introduce cache layer (Redis/Memcached)
-- Hot data stored in cache
-- Dramatically reduces database access
+- Most users browsing same popular products
+- Repetitive database queries
+- Need to reduce database I/O
 
 **Challenge**:
 - Process 1200 requests
 - Use cache effectively to reduce database pressure
 - Understand importance of cache hit rate
+
+**⚠️ Problem**: Repetitive read requests causing database I/O overload
 
 **Core Concepts**:
 - **Cache Strategy**: Which data should be cached
@@ -240,19 +306,27 @@ User ──→ App Server ──┬→ Cache (Fast)
 
 ---
 
-### Level 6: Load Balancer
+### Level 6: Load Balancer (负载均衡器)
+
+**📅 Stage**: Architecture Standardization
+
+**📖 Story Briefing**:
+
+> "We have a bunch of servers now, but users can only access them randomly - some servers are idle while others are exhausted. Deploy a load balancer. We need a traffic controller to intelligently distribute requests to the least busy servers."
 
 **Learning Objective**: Traffic Distribution and Load Balancing
 
 **Scenario**:
-- Introduce dedicated load balancer
-- Intelligently distribute traffic to multiple app servers
-- Provide health checks and failover
+- Multiple servers with uneven load distribution
+- Need intelligent traffic routing
+- Require health monitoring and failover
 
 **Challenge**:
 - Process 1400 requests
 - Use load balancer to optimize traffic distribution
 - Ensure even server load
+
+**⚠️ Problem**: Uneven traffic distribution, low resource utilization, lack of single entry point
 
 **Core Concepts**:
 - **Load Balancing Algorithms**: Round-robin, least connections, IP hash, etc.
@@ -274,19 +348,27 @@ User ──→ Load Balancer ┼→ App Server 2 ┼──→ Database
 
 ---
 
-### Level 7: CDN Layer
+### Level 7: CDN Layer (CDN层)
+
+**📅 Stage**: Global Expansion Period
+
+**📖 Story Briefing**:
+
+> "Overseas users are complaining! They say it takes 10 seconds to load a single product image. Our servers are too far from them. Configure a CDN (Content Delivery Network). Push images and scripts to edge nodes closest to users!"
 
 **Learning Objective**: Content Delivery Network Optimization
 
 **Scenario**:
-- Introduce CDN nodes
-- Static resources served from edge nodes
-- Reduces origin server pressure and user latency
+- Global user base
+- High latency for distant users
+- Static assets consuming bandwidth
 
 **Challenge**:
 - Process 1600 requests
 - Use CDN to accelerate content delivery
 - Understand advantages of edge computing
+
+**⚠️ Problem**: High network latency, static resources consuming massive bandwidth
 
 **Core Concepts**:
 - **Edge Nodes**: Service nodes close to users
@@ -307,19 +389,27 @@ User ──→ CDN Node ──→ Origin Server
 
 ---
 
-### Level 8: Read-Write Separation
+### Level 8: Read-Write Separation (读写分离)
+
+**📅 Stage**: Double Eleven Warm-up
+
+**📖 Story Briefing**:
+
+> "Too many 'window shoppers'! Massive browsing requests (reads) are clogging the database, preventing actual buyers (writes) from getting through. Build a master-slave database. Let slaves handle read requests, master focus on write requests. Split the traffic!"
 
 **Learning Objective**: Complete Read-Write Separation Architecture
 
 **Scenario**:
-- Master database handles write operations
-- Multiple slave databases handle read operations
-- Implement complete read-write separation strategy
+- Double Eleven (11.11) sale approaching
+- High ratio of browsing vs purchasing
+- Read requests blocking write operations
 
 **Challenge**:
 - Process 2000 requests
 - Optimize read/write paths
 - Manage master-slave sync latency
+
+**⚠️ Problem**: Read requests blocking write requests, serious database lock contention
 
 **Core Concepts**:
 - **Read-Write Separation**: Route read/write requests to different databases
@@ -341,19 +431,27 @@ App Server ──→ Master DB ┼→ Slave DB 2 (Read)
 
 ---
 
-### Level 9: Message Queue
+### Level 9: Message Queue (消息队列)
+
+**📅 Stage**: Black Friday Flash Sale
+
+**📖 Story Briefing**:
+
+> "The ultimate challenge! Flash sale traffic spikes will directly crash the database. We can't process all requests synchronously. Introduce a message queue (MQ). Give users a 'queue number' first, then process orders in the background. Peak shaving and valley filling!"
 
 **Learning Objective**: Asynchronous Processing and Message Queues
 
 **Scenario**:
-- Introduce publish/subscribe message queue
-- Decouple application components
-- Implement asynchronous processing
+- Black Friday mega sale event
+- Extreme traffic bursts
+- Database cannot handle synchronous writes
 
 **Challenge**:
 - Process 2000 requests
 - Use message queue for asynchronous communication
 - Improve system throughput and reliability
+
+**⚠️ Problem**: Instantaneous write traffic exceeds database limits, system avalanche
 
 **Core Concepts**:
 - **Pub/Sub Pattern**: Decouple message publishers and subscribers
@@ -759,6 +857,64 @@ We welcome all forms of contributions:
 - AWS Architecture Center
 - Google Cloud Architecture Framework
 - Microsoft Azure Architecture
+
+## 🏆 Game Ending
+
+### The Final Victory
+
+**Setting**: You're standing in the panoramic monitoring room, watching the dashboard filled with green indicators on the big screen.
+
+**Victory Message**:
+
+> "Congratulations! InstaBuy successfully handled 2000+ concurrent requests per second!"
+> 
+> "Throughout this journey, you didn't just earn money - you learned how to build a highly available, high-performance distributed system."
+> 
+> "Now, go ring the NASDAQ opening bell! 🔔"
+
+### Architecture Architect Rating
+
+After completing all 9 levels, you'll receive a final evaluation based on your:
+
+**💰 Budget Management**
+- **Excellent** (>$300 remaining): "Your architecture is both cost-effective and efficient - you're a genius!"
+- **Good** ($100-$300 remaining): "Well balanced between cost and performance. Solid architectural decisions!"
+- **Adequate** (<$100 remaining): "A bit expensive, but at least it didn't crash. That's good enough!"
+
+**📊 System Performance**
+- Error rate throughout all levels
+- Average response time
+- Resource utilization efficiency
+
+**🎓 Architecture Mastery**
+- Number of optimal solutions discovered
+- Speed of identifying bottlenecks
+- Efficiency of scaling decisions
+
+### Your Journey Summary
+
+**From Dorm Room to NASDAQ**:
+- Level 1: Single laptop in dorm room
+- Level 5: Multi-server data center
+- Level 9: Enterprise-grade distributed system
+
+**Skills Acquired**:
+- ✅ Vertical & Horizontal Scaling
+- ✅ Database Replication & Sharding
+- ✅ Caching Strategies
+- ✅ Load Balancing
+- ✅ Content Delivery Networks
+- ✅ Message Queue Systems
+- ✅ Read-Write Separation
+- ✅ Asynchronous Processing
+
+**Business Impact**:
+- Handled millions of users
+- Processed billions of transactions
+- Built a scalable, reliable platform
+- Became a true Architecture Tycoon!
+
+---
 
 ## 🎯 Summary
 

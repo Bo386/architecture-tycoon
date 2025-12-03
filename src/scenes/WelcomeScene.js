@@ -79,6 +79,9 @@ export class WelcomeScene extends Phaser.Scene {
         // Start button with modern design
         this.createStartButton(w/2, h * 0.75);
         
+        // Skip button in top-right corner
+        this.createSkipButton(w - 100, 40);
+        
         // Version/credits at bottom
         this.add.text(w/2, h - 30, 'v1.0 | Learn System Design Through Play', { 
             fontSize: '14px', 
@@ -157,6 +160,47 @@ export class WelcomeScene extends Phaser.Scene {
                     this.scene.start('ChapterSelectScene');
                 }
             });
+        });
+    }
+    
+    createSkipButton(x, y) {
+        const buttonWidth = 120;
+        const buttonHeight = 45;
+        
+        // Button background - subtle design
+        const btnBg = this.add.rectangle(x, y, buttonWidth, buttonHeight, 0x1a1a2e, 0.7)
+            .setInteractive({ useHandCursor: true });
+        
+        // Button border
+        const btnBorder = this.add.rectangle(x, y, buttonWidth + 2, buttonHeight + 2)
+            .setStrokeStyle(1, 0x4fc1ff, 0.3);
+        btnBorder.setDepth(-1);
+        
+        // Button text
+        const btnText = this.add.text(x, y, 'Skip ⏭', { 
+            fontSize: '18px', 
+            color: '#888888',
+            fontFamily: 'Arial'
+        }).setOrigin(0.5);
+        
+        // Hover effects
+        btnBg.on('pointerover', () => {
+            btnBg.fillColor = 0x2a2a3e;
+            btnBg.fillAlpha = 0.9;
+            btnBorder.setStrokeStyle(2, 0x6fd9ff, 0.8);
+            btnText.setColor('#ffffff');
+        });
+        
+        btnBg.on('pointerout', () => {
+            btnBg.fillColor = 0x1a1a2e;
+            btnBg.fillAlpha = 0.7;
+            btnBorder.setStrokeStyle(1, 0x4fc1ff, 0.3);
+            btnText.setColor('#888888');
+        });
+        
+        // Click handler - skip directly to chapter selection
+        btnBg.on('pointerdown', () => {
+            this.scene.start('ChapterSelectScene');
         });
     }
     

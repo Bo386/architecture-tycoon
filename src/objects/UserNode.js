@@ -9,7 +9,7 @@
  */
 
 import { CONFIG, GameState } from '../config.js';
-import { updateUI, checkGameEnd } from '../utils/uiManager.js';
+import { updateUI, checkGameEnd, addRevenue } from '../utils/uiManager.js';
 import { sendPacketAnim } from '../utils/animations.js';
 import { BaseNode } from './BaseNode.js';
 
@@ -68,6 +68,9 @@ export class UserNode extends BaseNode {
             GameState.success++;
             GameState.total++;
             this.localSuccess++;
+            
+            // Add revenue for successful request (if level has revenue system)
+            addRevenue(this.scene);
             
             this.updateStatsDisplay();
             updateUI();

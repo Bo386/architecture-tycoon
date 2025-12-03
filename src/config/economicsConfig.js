@@ -13,7 +13,29 @@ export const ECONOMICS_CONFIG = {
      * Starting resources
      */
     starting: {
-        money: 1500              // Initial budget at start of each level
+        money: 1500              // Initial budget at start of each level (default)
+    },
+
+    /**
+     * Level-specific starting budgets
+     */
+    levelStartingBudget: {
+        1: 100,                  // Level 1: Budget cloud server startup
+        2: null,                 // Use accumulated budget from Level 1
+        3: null,                 // Use accumulated budget
+        4: null,
+        5: null,
+        6: null,
+        7: null,
+        8: null,
+        9: null
+    },
+
+    /**
+     * Revenue per successful request
+     */
+    revenue: {
+        perSuccessfulRequest: 1  // $1 per successful request
     },
 
     /**
@@ -35,6 +57,18 @@ export const ECONOMICS_CONFIG = {
         loadBalancerDelay: 50,
         cdnDelay: 80,
         readReplicaDelay: 300
+    },
+
+    /**
+     * Level 1 specific values (budget cloud server)
+     */
+    level1: {
+        initialCapacity: 3,       // Very limited initial capacity
+        initialDelay: 300,        // Initial processing delay
+        upgradeCost: 150,         // Cost to upgrade server
+        upgradedCapacity: 5,      // Capacity after upgrade
+        upgradedDelay: 150,       // Processing delay after upgrade (2x faster)
+        speedMultiplier: 2        // Speed improvement multiplier
     },
 
     /**

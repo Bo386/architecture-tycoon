@@ -37,13 +37,98 @@ export const CONFIG = {
     /**
      * Game Economics
      */
-    upgradeCost: 200,           // Cost in dollars to upgrade a server's capacity
+    upgradeCost: 200,           // Cost in dollars to upgrade a server's capacity (default)
     
     /**
      * Win Conditions for Different Levels
      */
-    targetTotal: 1000,          // Level 1: Total requests that must be processed to complete
-    maxErrorRate: 1.0,          // Maximum acceptable error rate percentage (1% = 1.0)
+    targetTotal: 100,           // Level 1: Total requests that must be processed to complete (100 for Level 1)
+    maxErrorRate: 10.0,         // Level 1: Maximum acceptable error rate percentage (10% = 10.0 for Level 1)
+    
+    /**
+     * Level 1 Configuration - Budget Cloud Server
+     */
+    level1: {
+        // Initial traffic generation settings
+        initialTrafficDelay: 1500,      // Initial delay between traffic waves (ms)
+        initialPacketsPerWave: 1,       // Starting number of packets per wave
+        difficultyInterval: 8000,       // Time between difficulty increases (ms)
+        
+        // Starting budget and revenue
+        startingBudget: 100,            // Level 1 starts with only $100
+        revenuePerRequest: 1,           // Earn $1 per successful request
+        
+        // Server configuration (budget cloud server)
+        servers: {
+            user: {
+                capacity: 999,          // User nodes have unlimited capacity
+                speed: 10               // Instant request generation (ms)
+            },
+            app: {
+                capacity: 3,            // Very limited initial capacity (budget server)
+                speed: 300,             // Initial processing speed (ms)
+                upgradeCost: 150,       // Cost to upgrade ($150)
+                upgradedCapacity: 5,    // Capacity after upgrade
+                upgradedSpeed: 150      // Processing speed after upgrade (2x faster)
+            }
+        },
+        
+        // Victory conditions
+        targetTotal: 100,               // Complete 100 requests
+        maxErrorRate: 10.0,             // Keep failure rate below 10%
+        
+        // Difficulty progression stages
+        difficulty: {
+            stage1: {
+                level: 1,
+                trafficDelay: 1250,
+                packetsPerWave: 1,
+                message: "Traffic increasing..."
+            },
+            stage2: {
+                level: 2,
+                trafficDelay: 1000,
+                packetsPerWave: 1,
+                message: "Traffic increasing..."
+            },
+            stage3: {
+                level: 3,
+                trafficDelay: 750,
+                packetsPerWave: 1,
+                message: "Traffic increasing..."
+            },
+            stage4: {
+                level: 4,
+                trafficDelay: 350,
+                packetsPerWave: 2,
+                message: "⚠ High traffic alert!"
+            },
+            stage5: {
+                level: 5,
+                trafficDelay: 300,
+                packetsPerWave: 2,
+                message: "Sustained high load..."
+            },
+            stage6: {
+                level: 6,
+                trafficDelay: 300,
+                packetsPerWave: 2,
+                message: "Sustained high load..."
+            },
+            stage7: {
+                level: 7,
+                trafficDelay: 300,
+                packetsPerWave: 2,
+                message: "Sustained high load..."
+            },
+            stage8: {
+                level: 8,
+                trafficDelay: 200,
+                packetsPerWave: 5,
+                message: "⛔ Extreme pressure! System near collapse!"
+            }
+        }
+    },
     level2Target: 800,          // Level 2: Increased target (requires 300 requests to test database scalability)
     level3Target: 1000,         // Level 3: Further increased target to test multi-database scalability
     
@@ -677,12 +762,19 @@ export const GameState = {
  * @param {number} level - The level number to initialize (default: 1)
  *                         This determines which level configuration to use
  */
-export const resetGameState = (level = 1) => {
-    console.log('resetGameState called with level:', level);
+export const resetGameState = (level = 1, carryOverBudget = null) => {
+    console.log('resetGameState called with level:', level, 'carryOverBudget:', carryOverBudget);
     console.trace('Call stack:'); // This will show where resetGameState was called from
     
     // Reset player resources to starting values
-    GameState.money = 1500;
+    // Level 1 has special starting budget, other levels use carry-over or default
+    if (carryOverBudget !== null) {
+        GameState.money = carryOverBudget;  // Use carried over budget from previous level
+    } else if (level === 1) {
+        GameState.money = CONFIG.level1.startingBudget;  // Level 1: $100
+    } else {
+        GameState.money = 1500;  // Default for other levels
+    }
     
     // Clear all request processing statistics
     GameState.success = 0;
@@ -706,5 +798,5 @@ export const resetGameState = (level = 1) => {
     // Reset database storage (only relevant for Level 2+)
     GameState.databaseStorage = 0;
     
-    console.log('resetGameState completed - isRunning set to false');
+    console.log('resetGameState completed - money set to:', GameState.money, '- isRunning set to false');
 };
