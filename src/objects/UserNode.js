@@ -9,7 +9,7 @@
  */
 
 import { CONFIG, GameState } from '../config.js';
-import { updateUI, checkGameEnd } from '../utils/uiManager.js';
+import { updateUI, checkGameEnd, addRevenue } from '../utils/uiManager.js';
 import { sendPacketAnim } from '../utils/animations.js';
 import { BaseNode } from './BaseNode.js';
 
@@ -18,6 +18,11 @@ export class UserNode extends BaseNode {
         super(scene, x, y, name, 'user', 999, 10);
         this.localSuccess = 0;
         this.localErrors = 0;
+        
+        // Track concurrent requests and RPM
+        this.concurrentRequests = 0;
+        this.requestsLastMinute = [];
+        this.rpm = 0;
     }
 
     /**
@@ -48,7 +53,28 @@ export class UserNode extends BaseNode {
             fontFamily: 'Courier New' 
         }).setOrigin(1, 0.5);
         
-        this.add([this.statsTextSuccess, this.statsTextError]);
+        // Add concurrent requests and RPM display below the node
+        this.concurrentText = this.scene.add.text(0, 50, 'Concurrent: 0', { 
+            fontSize: '11px', 
+            color: '#00ffff', 
+            fontFamily: 'Courier New' 
+        }).setOrigin(0.5, 0);
+        
+        this.rpmText = this.scene.add.text(0, 65, 'RPM: 0', { 
+            fontSize: '11px', 
+            color: '#ffd700', 
+            fontFamily: 'Courier New' 
+        }).setOrigin(0.5, 0);
+        
+        this.add([this.statsTextSuccess, this.statsTextError, this.concurrentText, this.rpmText]);
+        
+        // Start RPM update timer
+        this.scene.time.addEvent({
+            delay: 1000, // Update every second
+            callback: this.updateRPM,
+            callbackScope: this,
+            loop: true
+        });
     }
 
     /**
@@ -65,9 +91,16 @@ export class UserNode extends BaseNode {
         if (packet.isResponse) {
             packet.destroy();
             
+            // Decrement concurrent requests
+            this.concurrentRequests = Math.max(0, this.concurrentRequests - 1);
+            this.updateConcurrentDisplay();
+            
             GameState.success++;
             GameState.total++;
             this.localSuccess++;
+            
+            // Add revenue for successful request (if level has revenue system)
+            addRevenue(this.scene);
             
             this.updateStatsDisplay();
             updateUI();
@@ -80,6 +113,20 @@ export class UserNode extends BaseNode {
      * Routes to CDN, LoadBalancer, or App based on availability
      */
     routePacket(packet) {
+        // Check if user has reached maximum concurrent requests (Level 1 limit)
+        const maxConcurrent = GameState.currentLevel === 1 ? 10 : 999;
+        
+        if (this.concurrentRequests >= maxConcurrent) {
+            // User is at max capacity, drop the request silently
+            packet.destroy();
+            return;
+        }
+        
+        // Track request sent
+        this.concurrentRequests++;
+        this.trackRequest();
+        this.updateConcurrentDisplay();
+        
         // Check for CDN (Level 7)
         const cdn = GameState.nodes['CDN1'];
         
@@ -120,6 +167,51 @@ export class UserNode extends BaseNode {
      */
     recordError() {
         this.localErrors++;
+        this.concurrentRequests = Math.max(0, this.concurrentRequests - 1);
+        this.updateConcurrentDisplay();
         this.updateStatsDisplay();
+    }
+    
+    /**
+     * Track Request for RPM Calculation
+     */
+    trackRequest() {
+        const now = Date.now();
+        this.requestsLastMinute.push(now);
+        
+        // Remove requests older than 60 seconds
+        const oneMinuteAgo = now - 60000;
+        this.requestsLastMinute = this.requestsLastMinute.filter(time => time > oneMinuteAgo);
+    }
+    
+    /**
+     * Update RPM Display
+     */
+    updateRPM() {
+        if (!this.active || !this.rpmText) return;
+        
+        // Clean old requests
+        const now = Date.now();
+        const oneMinuteAgo = now - 60000;
+        this.requestsLastMinute = this.requestsLastMinute.filter(time => time > oneMinuteAgo);
+        
+        // Update RPM
+        this.rpm = this.requestsLastMinute.length;
+        this.rpmText.setText(`RPM: ${this.rpm}`);
+        
+        // Keep green color always
+        this.rpmText.setColor('#00ff00');
+    }
+    
+    /**
+     * Update Concurrent Display
+     */
+    updateConcurrentDisplay() {
+        if (!this.active || !this.concurrentText) return;
+        
+        this.concurrentText.setText(`Concurrent: ${this.concurrentRequests}`);
+        
+        // Keep green color always
+        this.concurrentText.setColor('#00ff00');
     }
 }

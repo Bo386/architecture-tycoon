@@ -19,8 +19,16 @@ export const SCENE_CONFIG = [
         isLevel: false,
         levelNumber: null,
         title: 'Welcome',
+        nextLevel: 'ChapterSelectScene',
+        description: 'Welcome screen'
+    },
+    {
+        key: 'ChapterSelectScene',
+        isLevel: false,
+        levelNumber: null,
+        title: 'Chapter Selection',
         nextLevel: 'Level1Scene',
-        description: 'Welcome screen and level selection'
+        description: 'Select a chapter to play'
     },
     {
         key: 'Level1Scene',

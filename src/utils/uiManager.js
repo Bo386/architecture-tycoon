@@ -16,6 +16,96 @@
 import { CONFIG, GameState } from '../config.js';
 
 /**
+ * Get Target Total for Level
+ * 
+ * Returns the target number of requests for a given level
+ * 
+ * @param {number} level - The level number
+ * @returns {number} Target request count
+ */
+function getTargetForLevel(level) {
+    switch(level) {
+        case 1: return CONFIG.level1 ? CONFIG.level1.targetTotal : CONFIG.targetTotal;
+        case 2: return CONFIG.level2Target;
+        case 3: return CONFIG.level3Target;
+        case 4: return CONFIG.level4Target;
+        case 5: return CONFIG.level5Target;
+        case 6: return CONFIG.level6Target;
+        case 7: return CONFIG.level7Target;
+        case 8: return CONFIG.level8Target;
+        case 9: return CONFIG.level9Target;
+        default: return CONFIG.targetTotal;
+    }
+}
+
+/**
+ * Get Max Error Rate for Level
+ * 
+ * Returns the maximum acceptable error rate for a given level
+ * 
+ * @param {number} level - The level number
+ * @returns {number} Maximum error rate percentage
+ */
+function getMaxErrorRateForLevel(level) {
+    if (level === 1 && CONFIG.level1) {
+        return CONFIG.level1.maxErrorRate;
+    }
+    return CONFIG.maxErrorRate;
+}
+
+/**
+ * Get Upgrade Cost for Level
+ * 
+ * Returns the upgrade cost for the current level
+ * Levels may have custom upgrade costs
+ * 
+ * @returns {number} Upgrade cost
+ */
+function getUpgradeCost() {
+    // Level 1 has a special upgrade cost
+    if (GameState.currentLevel === 1 && CONFIG.level1 && CONFIG.level1.servers && CONFIG.level1.servers.app) {
+        return CONFIG.level1.servers.app.upgradeCost;
+    }
+    // Default upgrade cost for other levels
+    return CONFIG.upgradeCost;
+}
+
+/**
+ * Add Revenue for Successful Request
+ * 
+ * Called when a request is successfully completed.
+ * Adds revenue to the player's budget if the scene has revenue enabled.
+ * 
+ * @param {Phaser.Scene} scene - The active game scene
+ */
+export function addRevenue(scene) {
+    if (scene && scene.revenuePerRequest && scene.revenuePerRequest > 0) {
+        GameState.money += scene.revenuePerRequest;
+        updateUI();
+    }
+}
+
+/**
+ * Update Objectives Display
+ * 
+ * Updates the objectives list to show level-specific targets
+ * Called when a level starts to update the goal text
+ */
+export function updateObjectivesDisplay() {
+    const target = getTargetForLevel(GameState.currentLevel);
+    const maxErrorRate = getMaxErrorRateForLevel(GameState.currentLevel);
+    
+    const objectivesList = document.querySelector('.objectives-list');
+    if (objectivesList) {
+        objectivesList.innerHTML = `
+            <li>Complete ${target} requests</li>
+            <li>Maintain error rate < ${maxErrorRate}%</li>
+            <li>Manage your budget wisely</li>
+        `;
+    }
+}
+
+/**
  * Update All UI Elements
  * 
  * Main UI update function that refreshes all HTML elements to reflect
@@ -37,9 +127,8 @@ export function updateUI() {
     
     /**
      * Update progress display with level-specific target
-     * Level 1 requires 1000 requests, Level 2 requires 300
      */
-    const target = GameState.currentLevel === 2 ? CONFIG.level2Target : CONFIG.targetTotal;
+    const target = getTargetForLevel(GameState.currentLevel);
     const statTotalEl = document.getElementById('stat-total');
     if (statTotalEl) {
         statTotalEl.innerText = GameState.total;
@@ -47,7 +136,7 @@ export function updateUI() {
     
     /**
      * Update progress label to show the correct target
-     * This changes the "Progress (1000):" text based on current level
+     * This changes the "Progress (100):" text based on current level
      */
     const progressLabel = document.querySelector('.stat-item .stat-label');
     if (progressLabel && progressLabel.textContent.includes('Progress')) {
@@ -216,23 +305,25 @@ function updateDatabaseStats() {
  * 
  * Enables or disables the upgrade button based on available funds.
  * Also updates the button text to show cost or "Insufficient Funds".
+ * Uses level-specific upgrade costs when available.
  * 
  * Button states:
- * - Enabled: Player has enough money (≥ $200)
- * - Disabled: Player doesn't have enough money (< $200)
+ * - Enabled: Player has enough money for upgrade
+ * - Disabled: Player doesn't have enough money for upgrade
  */
 function updateUpgradeButton() {
     const upgradeBtn = document.getElementById('btn-upgrade');
+    const upgradeCost = getUpgradeCost();
     
     // Check if player has enough money for an upgrade
-    if (GameState.money < CONFIG.upgradeCost) {
-        // Insufficient funds - disable button and show message
+    if (GameState.money < upgradeCost) {
+        // Insufficient funds - disable button and show required amount
         upgradeBtn.disabled = true;
-        upgradeBtn.innerHTML = `<span>⬆ Insufficient Funds</span>`;
+        upgradeBtn.innerHTML = `<span>⬆ Insufficient Funds ($${upgradeCost})</span>`;
     } else {
         // Sufficient funds - enable button and show cost
         upgradeBtn.disabled = false;
-        upgradeBtn.innerHTML = `<span>⬆ Upgrade Server ($${CONFIG.upgradeCost})</span>`;
+        upgradeBtn.innerHTML = `<span>⬆ Upgrade Server ($${upgradeCost})</span>`;
     }
 }
 
@@ -299,7 +390,7 @@ export function checkGameEnd(scene) {
     if (GameState.isGameOver) return;
 
     // Get the target based on current level
-    const target = GameState.currentLevel === 2 ? CONFIG.level2Target : CONFIG.targetTotal;
+    const target = getTargetForLevel(GameState.currentLevel);
     
     // Check if we've processed enough requests
     if (GameState.total >= target) {
@@ -313,8 +404,8 @@ export function checkGameEnd(scene) {
  * Terminates the current simulation and displays the results modal.
  * Stops all timers, calculates final statistics, and determines win/lose status.
  * 
- * Win condition: Error rate < 1%
- * Lose condition: Error rate ≥ 1%
+ * Win condition: Error rate below level-specific maximum
+ * Lose condition: Error rate >= level-specific maximum
  * 
  * @param {Phaser.Scene} scene - The active game scene (needed to stop timers)
  */
@@ -334,11 +425,14 @@ function endGame(scene) {
     // Calculate final error rate
     const rate = (GameState.errors / GameState.total) * 100;
     
+    // Get level-specific max error rate
+    const maxErrorRate = getMaxErrorRateForLevel(GameState.currentLevel);
+    
     // Determine win/lose based on error rate
-    const isWin = rate < CONFIG.maxErrorRate;
+    const isWin = rate < maxErrorRate;
 
     // Display the results modal
-    showResultModal(isWin, rate);
+    showResultModal(isWin, rate, maxErrorRate);
 }
 
 /**
@@ -352,12 +446,13 @@ function endGame(scene) {
  * 
  * The modal content is customized based on:
  * - Win vs lose status
- * - Current level (Level 1 vs Level 2)
+ * - Current level
  * 
  * @param {boolean} isWin - Whether the player met the win condition
  * @param {number} rate - Final error rate percentage
+ * @param {number} maxErrorRate - Maximum allowed error rate for this level
  */
-function showResultModal(isWin, rate) {
+function showResultModal(isWin, rate, maxErrorRate) {
     // Get modal elements from DOM
     const modal = document.getElementById('result-modal');
     const title = document.getElementById('modal-title');
@@ -370,6 +465,9 @@ function showResultModal(isWin, rate) {
     
     // Apply theme class for win/lose styling (can be used for CSS)
     modal.className = isWin ? 'win-theme show' : 'lose-theme show';
+    
+    // Get level-specific target
+    const target = getTargetForLevel(GameState.currentLevel);
 
     /**
      * Win Condition - Show Success Message and Educational Content
@@ -382,8 +480,8 @@ function showResultModal(isWin, rate) {
         if (GameState.currentLevel === 1) {
             title.innerText = "Level 1 Complete!";
             body.innerHTML = `
-                <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < 1%)</p>
-                <p>You successfully handled ${CONFIG.targetTotal} high-concurrency requests!</p>
+                <p>Final Error Rate: <strong style="color:#00ff00">${rate.toFixed(2)}%</strong> (Goal < ${maxErrorRate}%)</p>
+                <p>You successfully handled ${target} high-concurrency requests!</p>
                 
                 <div class="concept-box" style="background: rgba(74, 144, 226, 0.1); border: 1px solid #4a90e2; border-radius: 8px; padding: 15px; margin-top: 15px;">
                     <strong>Architect's Notes: Vertical Scaling</strong><br/>
@@ -432,9 +530,8 @@ function showResultModal(isWin, rate) {
      */
     else {
         title.innerText = "Mission Failed";
-        const target = GameState.currentLevel === 2 ? CONFIG.level2Target : CONFIG.targetTotal;
         body.innerHTML = `
-            <p>Final Error Rate: <strong style="color:#ff4444">${rate.toFixed(2)}%</strong> (Exceeded 1%)</p>
+            <p>Final Error Rate: <strong style="color:#ff4444">${rate.toFixed(2)}%</strong> (Exceeded ${maxErrorRate}%)</p>
             <p>System crashed under high pressure, user experience was poor.</p>
             <p>Suggestion: Upgrade servers earlier, or prepare before pressure arrives.</p>
         `;

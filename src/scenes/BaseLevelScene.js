@@ -16,7 +16,7 @@
 import { CONFIG, GameState, resetGameState } from '../config.js';
 import { LAYOUT_CONFIG, UI_CONFIG } from '../config/index.js';
 import { drawDualLines } from '../utils/animations.js';
-import { updateUI, checkGameEnd } from '../utils/uiManager.js';
+import { updateUI, checkGameEnd, updateObjectivesDisplay } from '../utils/uiManager.js';
 
 export class BaseLevelScene extends Phaser.Scene {
     /**
@@ -26,11 +26,13 @@ export class BaseLevelScene extends Phaser.Scene {
      * @param {string} config.key - Unique scene key (e.g., 'Level1Scene')
      * @param {number} config.levelNumber - Level number (1-8)
      * @param {number} config.targetTotal - Total requests needed to complete
+     * @param {number} config.maxErrorRate - Maximum acceptable error rate percentage (optional, default from CONFIG)
      * @param {number} config.initialTrafficDelay - Initial delay between traffic waves (ms)
      * @param {number} config.initialPacketsPerWave - Starting packets per wave
      * @param {number} config.difficultyInterval - Time between difficulty increases (ms)
      * @param {Object} config.difficultyStages - Difficulty progression configuration
      * @param {Array<string>} config.userNodeIds - Array of user node IDs (e.g., ['User1', 'User2'])
+     * @param {number} config.revenuePerRequest - Revenue earned per successful request (optional, default 0)
      */
     constructor(config) {
         super({ key: config.key });
@@ -39,11 +41,13 @@ export class BaseLevelScene extends Phaser.Scene {
         this.levelConfig = config;
         this.levelNumber = config.levelNumber;
         this.targetTotal = config.targetTotal;
+        this.maxErrorRate = config.maxErrorRate !== undefined ? config.maxErrorRate : CONFIG.maxErrorRate;
         this.initialTrafficDelay = config.initialTrafficDelay || 1500;
         this.initialPacketsPerWave = config.initialPacketsPerWave || 1;
         this.difficultyInterval = config.difficultyInterval || 8000;
         this.difficultyStages = config.difficultyStages || {};
         this.userNodeIds = config.userNodeIds || ['User1', 'User2', 'User3'];
+        this.revenuePerRequest = config.revenuePerRequest || 0;  // Revenue per successful request
     }
 
     /**
@@ -53,11 +57,31 @@ export class BaseLevelScene extends Phaser.Scene {
      * Sets up the entire level including UI, background, nodes, and initial state.
      */
     create() {
+        // Restore normal layout - reset main-content from fullscreen
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.style.position = '';
+            mainContent.style.top = '';
+            mainContent.style.left = '';
+            mainContent.style.width = '';
+            mainContent.style.height = '';
+            mainContent.style.zIndex = '';
+        }
+        
         // Show Game UI Elements
         const leftSidebar = document.getElementById('left-sidebar');
         const controlPanel = document.getElementById('control-panel');
         if (leftSidebar) leftSidebar.style.display = 'flex';
         if (controlPanel) controlPanel.style.display = 'flex';
+        
+        // Show header elements
+        const header = document.getElementById('header');
+        const levelSelector = document.getElementById('level-selector');
+        const legend = document.querySelector('.legend-box');
+        
+        if (header) header.style.display = 'flex';
+        if (levelSelector) levelSelector.style.display = 'block';
+        if (legend) legend.style.display = 'flex';
         
         // Ensure result modal is hidden at start
         document.getElementById('result-modal').style.display = 'none';
@@ -72,13 +96,14 @@ export class BaseLevelScene extends Phaser.Scene {
         this.packetsPerWave = this.initialPacketsPerWave;
 
         // Update the UI to reflect initial state
+        updateObjectivesDisplay(); // Update objectives with level-specific targets
         updateUI();
 
         // Set up visual elements and create server nodes
         this.setupBackground();
         this.createNodes(); // Must be implemented by child classes
-        this.setupZoom();
         this.setupCameraDrag();
+        this.setupCameraZoom();
     }
 
     /**
@@ -146,8 +171,8 @@ export class BaseLevelScene extends Phaser.Scene {
     updateCameraDrag(pointer) {
         const deltaX = pointer.x - this.dragStartX;
         const deltaY = pointer.y - this.dragStartY;
-        this.cameras.main.scrollX = this.cameraStartX - deltaX / this.currentZoom;
-        this.cameras.main.scrollY = this.cameraStartY - deltaY / this.currentZoom;
+        this.cameras.main.scrollX = this.cameraStartX - deltaX;
+        this.cameras.main.scrollY = this.cameraStartY - deltaY;
     }
 
     /**
@@ -159,46 +184,22 @@ export class BaseLevelScene extends Phaser.Scene {
     }
 
     /**
-     * Setup Zoom Controls
+     * Setup Camera Zoom
+     * 
+     * Enables zooming in/out using mouse wheel.
      */
-    setupZoom() {
-        this.cameras.main.setZoom(1);
-        this.currentZoom = 1;
-        this.minZoom = 0.5;
-        this.maxZoom = 2.0;
-
-        // Enable mouse wheel zoom
+    setupCameraZoom() {
         this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY, deltaZ) => {
-            const zoomDelta = deltaY > 0 ? -0.1 : 0.1;
-            this.adjustZoom(zoomDelta);
+            // deltaY > 0 means scroll down (zoom out)
+            // deltaY < 0 means scroll up (zoom in)
+            const zoomFactor = deltaY > 0 ? 0.9 : 1.1;
+            const newZoom = Phaser.Math.Clamp(
+                this.cameras.main.zoom * zoomFactor,
+                0.5,  // Minimum zoom (zoomed out)
+                2.0   // Maximum zoom (zoomed in)
+            );
+            this.cameras.main.setZoom(newZoom);
         });
-    }
-
-    /**
-     * Adjust Zoom Level
-     */
-    adjustZoom(delta) {
-        this.currentZoom += delta;
-        this.currentZoom = Math.max(this.minZoom, Math.min(this.maxZoom, this.currentZoom));
-        this.cameras.main.setZoom(this.currentZoom);
-        
-        const zoomDisplay = document.getElementById('zoom-level');
-        if (zoomDisplay) {
-            zoomDisplay.textContent = Math.round(this.currentZoom * 100) + '%';
-        }
-    }
-
-    /**
-     * Reset Zoom to Default
-     */
-    resetZoom() {
-        this.currentZoom = 1;
-        this.cameras.main.setZoom(1);
-        
-        const zoomDisplay = document.getElementById('zoom-level');
-        if (zoomDisplay) {
-            zoomDisplay.textContent = '100%';
-        }
     }
 
     /**

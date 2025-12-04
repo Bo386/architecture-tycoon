@@ -200,6 +200,32 @@ body {
     overflow: hidden; /* Prevent overflow */
 }
 
+/* Ensure Phaser canvas doesn't block UI interactions */
+#game-container canvas {
+    pointer-events: auto; /* Canvas can receive events within its area */
+}
+
+/* Ensure control panel and buttons are always clickable */
+#control-panel {
+    position: relative; /* Establish stacking context */
+    z-index: 100; /* Higher than game canvas */
+    pointer-events: auto; /* Always receive pointer events */
+}
+
+/* Ensure buttons are always clickable */
+#control-panel button {
+    position: relative; /* Establish stacking context */
+    z-index: 101; /* Higher than control panel */
+    pointer-events: auto; /* Always receive pointer events */
+}
+
+/* Ensure header and sidebar are always clickable */
+#header, #left-sidebar {
+    position: relative;
+    z-index: 100;
+    pointer-events: auto;
+}
+
 /* ====================
    CONTROL PANEL
    ==================== */
@@ -228,11 +254,29 @@ body {
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); /* Text glow effect */
 }
 
+/* Controls section container - for separating common and level-specific controls */
+.controls-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Section label for control groups */
+.section-label {
+    font-size: 12px;
+    color: #4a90e2;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
 /* Container for action buttons */
 .button-group {
     display: flex; /* Horizontal layout */
     gap: 15px; /* Space between buttons */
     align-items: center; /* Vertically center buttons */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 
 /* ====================

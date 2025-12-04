@@ -18,6 +18,7 @@ import { SceneManager } from './managers/SceneManager.js';
 import { SCENE_CONFIG } from './config/sceneConfig.js';
 // Import all game scenes
 import { WelcomeScene } from './scenes/WelcomeScene.js';
+import { ChapterSelectScene } from './scenes/ChapterSelectScene.js';
 import { Level1Scene } from './scenes/Level1Scene.js';
 import { Level2Scene } from './scenes/Level2Scene.js';
 import { Level3Scene } from './scenes/Level3Scene.js';
@@ -55,7 +56,7 @@ const gameConfig = {
      * Scenes are the different "screens" or "levels" of the game
      * First scene in array (WelcomeScene) will be the default starting scene
      */
-    scene: [WelcomeScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene, Level9Scene]
+    scene: [WelcomeScene, ChapterSelectScene, Level1Scene, Level2Scene, Level3Scene, Level4Scene, Level5Scene, Level6Scene, Level7Scene, Level8Scene, Level9Scene]
 };
 
 /**
@@ -189,25 +190,40 @@ function setupEventHandlers() {
      * Purchases an upgrade for the main application server.
      * Only works if player has enough money (checked before executing).
      * Deducts money, upgrades the server capacity, and updates the UI.
+     * Uses level-specific upgrade costs when available.
      */
     document.getElementById('btn-upgrade').addEventListener('click', () => {
+        // Get level-specific upgrade cost
+        let upgradeCost = CONFIG.upgradeCost; // Default cost
+        
+        // Level 1 has a special upgrade cost
+        if (GameState.currentLevel === 1 && CONFIG.level1 && CONFIG.level1.servers && CONFIG.level1.servers.app) {
+            upgradeCost = CONFIG.level1.servers.app.upgradeCost;
+        }
+        
         // Check if player has sufficient funds for upgrade
-        if (GameState.money >= CONFIG.upgradeCost) {
-            // Deduct the upgrade cost from player's money
-            GameState.money -= CONFIG.upgradeCost;
-            
+        if (GameState.money >= upgradeCost) {
             // Find all app servers (supports both single 'App' and multiple 'App1', 'App2', etc.)
             const appServers = Object.keys(GameState.nodes)
                 .filter(key => key.startsWith('App') || key === 'App')
                 .map(key => GameState.nodes[key])
                 .filter(app => app && app.active);
             
-            // Upgrade all app servers
+            // Try to upgrade all app servers, check if any succeeded
+            let upgradeSucceeded = false;
             appServers.forEach(app => {
                 if (app && app.upgrade) {
-                    app.upgrade();
+                    const success = app.upgrade();
+                    if (success) {
+                        upgradeSucceeded = true;
+                    }
                 }
             });
+            
+            // Only deduct money if upgrade was successful
+            if (upgradeSucceeded) {
+                GameState.money -= upgradeCost;
+            }
             
             // Update the UI to reflect new money amount and node capacity
             updateUI();
@@ -266,30 +282,5 @@ function setupEventHandlers() {
         console.error('Level selector element not found!');
     }
 
-    /**
-     * Zoom In Button Handler
-     * 
-     * Increases the camera zoom level (zoom in).
-     */
-    document.getElementById('btn-zoom-in').addEventListener('click', () => {
-        sceneManager.executeOnActive('adjustZoom', 0.1);
-    });
-
-    /**
-     * Zoom Out Button Handler
-     * 
-     * Decreases the camera zoom level (zoom out).
-     */
-    document.getElementById('btn-zoom-out').addEventListener('click', () => {
-        sceneManager.executeOnActive('adjustZoom', -0.1);
-    });
-
-    /**
-     * Reset Zoom Button Handler
-     * 
-     * Resets the camera zoom to 100% (default).
-     */
-    document.getElementById('btn-zoom-reset').addEventListener('click', () => {
-        sceneManager.executeOnActive('resetZoom');
-    });
+    console.log('Event handlers setup complete');
 }
