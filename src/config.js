@@ -42,7 +42,7 @@ export const CONFIG = {
     /**
      * Win Conditions for Different Levels
      */
-    targetTotal: 100,           // Level 1: Total requests that must be processed to complete (100 for Level 1)
+    targetTotal: 200,           // Level 1: Total requests that must be processed to complete (200 for Level 1)
     maxErrorRate: 10.0,         // Level 1: Maximum acceptable error rate percentage (10% = 10.0 for Level 1)
     
     /**
@@ -52,7 +52,7 @@ export const CONFIG = {
         // Initial traffic generation settings
         initialTrafficDelay: 1500,      // Initial delay between traffic waves (ms)
         initialPacketsPerWave: 1,       // Starting number of packets per wave
-        difficultyInterval: 8000,       // Time between difficulty increases (ms)
+        difficultyInterval: 5000,       // Time between difficulty increases (ms) - REDUCED from 8000 to 5000
         
         // Starting budget and revenue
         startingBudget: 100,            // Level 1 starts with only $100
@@ -74,58 +74,58 @@ export const CONFIG = {
         },
         
         // Victory conditions
-        targetTotal: 100,               // Complete 100 requests
+        targetTotal: 200,               // Complete 200 requests
         maxErrorRate: 10.0,             // Keep failure rate below 10%
         
-        // Difficulty progression stages
+        // Difficulty progression stages (ramp up to 5 concurrent by ~50 requests)
         difficulty: {
             stage1: {
                 level: 1,
-                trafficDelay: 1250,
+                trafficDelay: 1200,
                 packetsPerWave: 1,
                 message: "Traffic increasing..."
             },
             stage2: {
                 level: 2,
-                trafficDelay: 1000,
+                trafficDelay: 900,
                 packetsPerWave: 1,
-                message: "Traffic increasing..."
+                message: "More customers arriving..."
             },
             stage3: {
                 level: 3,
-                trafficDelay: 750,
-                packetsPerWave: 1,
-                message: "Traffic increasing..."
+                trafficDelay: 600,
+                packetsPerWave: 2,
+                message: "⚠ Traffic spike!"
             },
             stage4: {
                 level: 4,
-                trafficDelay: 350,
-                packetsPerWave: 2,
-                message: "⚠ High traffic alert!"
+                trafficDelay: 300,
+                packetsPerWave: 5,
+                message: "⚠ High concurrent load (5 requests)!"
             },
             stage5: {
                 level: 5,
-                trafficDelay: 300,
-                packetsPerWave: 2,
-                message: "Sustained high load..."
+                trafficDelay: 280,
+                packetsPerWave: 5,
+                message: "⛔ Server overloaded!"
             },
             stage6: {
                 level: 6,
-                trafficDelay: 300,
-                packetsPerWave: 2,
-                message: "Sustained high load..."
+                trafficDelay: 250,
+                packetsPerWave: 6,
+                message: "⛔ Extreme pressure!"
             },
             stage7: {
                 level: 7,
-                trafficDelay: 300,
-                packetsPerWave: 2,
-                message: "Sustained high load..."
+                trafficDelay: 220,
+                packetsPerWave: 6,
+                message: "⛔ System near collapse!"
             },
             stage8: {
                 level: 8,
                 trafficDelay: 200,
-                packetsPerWave: 5,
-                message: "⛔ Extreme pressure! System near collapse!"
+                packetsPerWave: 7,
+                message: "⛔ Critical failure imminent! Upgrade NOW!"
             }
         }
     },

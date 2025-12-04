@@ -200,6 +200,32 @@ body {
     overflow: hidden; /* Prevent overflow */
 }
 
+/* Ensure Phaser canvas doesn't block UI interactions */
+#game-container canvas {
+    pointer-events: auto; /* Canvas can receive events within its area */
+}
+
+/* Ensure control panel and buttons are always clickable */
+#control-panel {
+    position: relative; /* Establish stacking context */
+    z-index: 100; /* Higher than game canvas */
+    pointer-events: auto; /* Always receive pointer events */
+}
+
+/* Ensure buttons are always clickable */
+#control-panel button {
+    position: relative; /* Establish stacking context */
+    z-index: 101; /* Higher than control panel */
+    pointer-events: auto; /* Always receive pointer events */
+}
+
+/* Ensure header and sidebar are always clickable */
+#header, #left-sidebar {
+    position: relative;
+    z-index: 100;
+    pointer-events: auto;
+}
+
 /* ====================
    CONTROL PANEL
    ==================== */

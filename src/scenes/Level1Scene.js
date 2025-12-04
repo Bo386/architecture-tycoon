@@ -172,6 +172,9 @@ export class Level1Scene extends BaseLevelScene {
             CONFIG.level1.servers.app.speed         // 300ms processing time
         );
         
+        // Set maximum capacity limit for Level 1 (budget cloud server)
+        GameState.nodes['App'].maxCapacity = 5;
+        
         // Store Level 1 upgrade configuration for later use
         this.level1AppServer = GameState.nodes['App'];
         this.level1UpgradeCost = CONFIG.level1.servers.app.upgradeCost;

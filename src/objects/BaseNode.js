@@ -133,8 +133,22 @@ export class BaseNode extends Phaser.GameObjects.Container {
      * Upgrade Node
      */
     upgrade() {
+        // Check if capacity has reached maximum (if maxCapacity is set)
+        if (this.maxCapacity && this.capacity >= this.maxCapacity) {
+            this.showFloatText('Max Capacity!', '#ff6600');
+            return false; // Upgrade failed
+        }
+        
         this.level++;
-        this.capacity = Math.floor(this.capacity * 2.4);
+        const newCapacity = Math.floor(this.capacity * 2.4);
+        
+        // Apply max capacity limit if set
+        if (this.maxCapacity) {
+            this.capacity = Math.min(newCapacity, this.maxCapacity);
+        } else {
+            this.capacity = newCapacity;
+        }
+        
         this.speed = Math.max(50, this.speed * 0.5);
 
         const newStrokeWidth = 2 + (this.level - 1) * 2;
@@ -152,9 +166,16 @@ export class BaseNode extends Phaser.GameObjects.Container {
             this.levelText.setText('Lv.' + this.level);
             this.levelText.setColor(this.level >= 3 ? '#ffd700' : '#bd00ff');
         }
+        
+        // Update server info display if it exists (for ProcessingNode subclasses)
+        if (typeof this.updateServerInfo === 'function') {
+            this.updateServerInfo();
+        }
 
         this.playUpgradeAnimation(newBorderColor);
         this.showFloatText('UPGRADE!', '#ffd700');
+        
+        return true; // Upgrade successful
     }
 
     /**

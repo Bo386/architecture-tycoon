@@ -317,9 +317,9 @@ function updateUpgradeButton() {
     
     // Check if player has enough money for an upgrade
     if (GameState.money < upgradeCost) {
-        // Insufficient funds - disable button and show message
+        // Insufficient funds - disable button and show required amount
         upgradeBtn.disabled = true;
-        upgradeBtn.innerHTML = `<span>⬆ Insufficient Funds</span>`;
+        upgradeBtn.innerHTML = `<span>⬆ Insufficient Funds ($${upgradeCost})</span>`;
     } else {
         // Sufficient funds - enable button and show cost
         upgradeBtn.disabled = false;

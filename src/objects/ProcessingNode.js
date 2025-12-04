@@ -42,6 +42,21 @@ export class ProcessingNode extends BaseNode {
             fontStyle: 'bold' 
         }).setOrigin(0, 0.5);
         
+        // Server capacity info (for app servers only)
+        if (this.type === 'app') {
+            this.serverInfoText = this.scene.add.text(w/2 + 10, 0, 
+                `Capacity: ${this.capacity}\nSpeed: ${this.speed}ms`, 
+                {
+                    fontSize: '11px',
+                    color: '#4fc1ff',
+                    fontFamily: 'Courier New',
+                    align: 'left'
+                }
+            ).setOrigin(0, 0.5);
+            
+            this.add([this.serverInfoText]);
+        }
+        
         this.add([this.barBg, this.barFg, this.capacityText, this.levelText]);
     }
 
@@ -112,6 +127,19 @@ export class ProcessingNode extends BaseNode {
             this.capacityText.setColor('#ffff00');
         } else {
             this.capacityText.setColor('#ff0000');
+        }
+        
+        // Update server info display if exists (for app servers)
+        this.updateServerInfo();
+    }
+    
+    /**
+     * Update Server Info Display
+     * Updates the capacity and speed display on the right side of app servers
+     */
+    updateServerInfo() {
+        if (this.type === 'app' && this.serverInfoText) {
+            this.serverInfoText.setText(`Capacity: ${this.capacity}\nSpeed: ${this.speed}ms`);
         }
     }
 

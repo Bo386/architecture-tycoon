@@ -203,21 +203,27 @@ function setupEventHandlers() {
         
         // Check if player has sufficient funds for upgrade
         if (GameState.money >= upgradeCost) {
-            // Deduct the upgrade cost from player's money
-            GameState.money -= upgradeCost;
-            
             // Find all app servers (supports both single 'App' and multiple 'App1', 'App2', etc.)
             const appServers = Object.keys(GameState.nodes)
                 .filter(key => key.startsWith('App') || key === 'App')
                 .map(key => GameState.nodes[key])
                 .filter(app => app && app.active);
             
-            // Upgrade all app servers
+            // Try to upgrade all app servers, check if any succeeded
+            let upgradeSucceeded = false;
             appServers.forEach(app => {
                 if (app && app.upgrade) {
-                    app.upgrade();
+                    const success = app.upgrade();
+                    if (success) {
+                        upgradeSucceeded = true;
+                    }
                 }
             });
+            
+            // Only deduct money if upgrade was successful
+            if (upgradeSucceeded) {
+                GameState.money -= upgradeCost;
+            }
             
             // Update the UI to reflect new money amount and node capacity
             updateUI();
